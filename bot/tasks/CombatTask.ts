@@ -471,20 +471,27 @@ export class CombatTask extends BotTask {
             this.approachTicks++;
 
             if (player.stats[this.stat] > this.lastXp) {
-                this._log(player, `XP GAINED (${this.stat === PlayerStat.ATTACK ? 'ATK' : this.stat === PlayerStat.STRENGTH ? 'STR' : 'DEF'})`, 'xp_gain');
 
-                // Rotate to the next combat style for the next kill
-                this.trainIndex = (this.trainIndex + 1) % TRAIN_CYCLE.length;
-                const next = TRAIN_CYCLE[this.trainIndex];
-                this.stat = next.stat;
-                setCombatStyle(player, next.style);
-                this.lastXp = player.stats[this.stat];
+    const roll = randInt(0, 2);
 
-                this.state = 'loot';
-                this.interactTicks = 0;
-                this.approachTicks = 0;
-                return;
-            }
+    let stat: PlayerStat;
+
+    if (roll === 0) stat = PlayerStat.ATTACK;
+    else if (roll === 1) stat = PlayerStat.STRENGTH;
+    else stat = PlayerStat.DEFENCE;
+
+    addXp(player, stat, 20); // or your per-hit XP amount
+
+    this._log(player, `random XP → ${stat}`, 'xp_gain_random');
+
+    this.lastXp = player.stats[this.stat];
+
+    this.state = 'loot';
+    this.interactTicks = 0;
+    this.approachTicks = 0;
+
+    return;
+}
 
             if (this.interactTicks >= this.noAttackTimeoutTicks) {
                 this._log(player, 'no attack after 2s → retarget', 'no_attack_timeout');
