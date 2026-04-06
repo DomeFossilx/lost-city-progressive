@@ -1,29 +1,37 @@
 /**
  * BotDatabase.ts
  *
- * Ensures each bot has a row in the `account` table so that LoginServer can
- * find the account during the normal player_logout flow and call
- * updateHiscores() for it.
+ * Two responsibilities:
  *
- * Hiscore writes are handled entirely by LoginServer.ts on logout — no custom
- * DB code is needed here.
+ *   1. ensureBotAccount  — creates a row in `account` so LoginServer can find
+ *      the bot by username during the player_logout flow and call
+ *      updateHiscores().  Works in both standalone and LOGIN_SERVER modes.
+ *
+ *   2. updateBotHiscores — atomically upserts hiscore rows so bots appear on
+ *      the leaderboard.  Needed in standalone mode (LOGIN_SERVER=false) where
+ *      LoginThread's player_logout handler only writes the .sav file and never
+ *      calls updateHiscores().  In production (LOGIN_SERVER=true) LoginServer
+ *      also calls updateHiscores() on logout — a double upsert is harmless.
+ *
+ * All writes use ON CONFLICT DO UPDATE SET (SQLite upsert) which is atomic and
+ * safe to call from concurrent async chains without UNIQUE constraint errors.
  */
 
 import { db, toDbDate } from '#/db/query.js';
+import Player from '#/engine/entity/Player.js';
+import { PlayerStatEnabled } from '#/engine/entity/PlayerStat.js';
+import Environment from '#/util/Environment.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Account management
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Returns the account_id for the given bot username.
- * Creates a new account row if one does not already exist.
+ * Returns the account_id for the given bot username, creating the row if
+ * it does not already exist.  Safe to call on every server start.
  *
- * Uses INSERT OR IGNORE so the call is safe to make on every server start —
- * if the row already exists it is left unchanged and the SELECT returns the
- * existing id.
- *
- * Bot accounts use `!bot` as their password — this string is intentionally
- * NOT a valid bcrypt hash so no client can ever authenticate as a bot through
- * the normal login flow.
- *
- * Returns null if the database is unavailable or the operation fails.
+ * Bot accounts use `!bot` as their password — intentionally not a valid
+ * bcrypt hash so no client can authenticate as a bot through the normal login.
  */
 export async function ensureBotAccount(username: string): Promise<number | null> {
     try {
@@ -57,3 +65,21 @@ export async function ensureBotAccount(username: string): Promise<number | null>
         return null;
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hiscore updates
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Atomically upserts hiscore rows for a bot player.
+ *
+ * Mirrors LoginServer.ts's updateHiscores() so bots appear on the leaderboard
+ * even in standalone mode (LOGIN_SERVER=false) where the engine's logout path
+ * does not call updateHiscores().
+ *
+ * Rules (kept in sync with LoginServer.ts updateHiscores):
+ *   - Total XP / total level always written to hiscore_large (type = 0).
+ *   - Individual skill rows only written when baseLevels[stat] >= 15.
+ */
+
+

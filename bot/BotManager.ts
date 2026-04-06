@@ -26,7 +26,7 @@ import Player from '#/engine/entity/Player.js';
 import { PlayerStat, getBaseLevel } from '#/engine/bot/BotAction.js';
 import { BotPlayer } from '#/engine/bot/BotPlayer.js';
 import { setWorld, BotWorldHandle } from '#/engine/bot/BotWorld.js';
-import { ensureBotAccount } from '#/engine/bot/BotDatabase.js';
+import { ensureBotAccount,} from '#/engine/bot/BotDatabase.js';
 import {
     BotGoalPlanner,
     makeSkiller, makeFighter, makeBalanced, makeRandom,
@@ -37,6 +37,15 @@ import { Locations } from '#/engine/bot/BotKnowledge.js';
 import { BotAppearance } from '#/engine/bot/BotAppearance.js';
 import InvType from '#/cache/config/InvType.js';
 import Environment from '#/util/Environment.js';
+import { toBase37, fromBase37 } from '#/util/JString.js';
+
+/** Normalize a bot username the same way PlayerLoading does.
+ *  RS2 base37 maps underscores → spaces and strips unsupported chars,
+ *  so "araxxor_prime" becomes "araxxor prime", etc. */
+function normalizeBotUsername(raw: string): string {
+    return fromBase37(toBase37(raw));
+}
+
 const PLANNER_MAP = {
     skiller: makeSkiller,
     fighter: makeFighter,
@@ -96,6 +105,8 @@ class BotManagerClass {
     private world:      BotWorldHandle | null = null;
     private bots:       Map<string, BotPlayer>  = new Map();
     private prevLevels: Map<string, Uint8Array> = new Map();
+    /** account_id for each bot — populated async after spawn via ensureBotAccount. */
+    private accountIds: Map<string, number>     = new Map();
     private spawned    = false;
     private tickCount  = 0;
 
@@ -129,7 +140,7 @@ class BotManagerClass {
 
         for (const bot of this.bots.values()) {
             if (bot.player.slot === -1) continue;
-            this._checkLevelUps(bot);
+            
             bot.tick();
         }
 
@@ -143,10 +154,16 @@ class BotManagerClass {
    private _spawnBot(cfg: BotConfig): void {
     if (!this.world) return;
 
+    // Normalize username the same way PlayerLoading does:
+    // base37 converts underscores to spaces, strips unsupported chars, lowercases.
+    // e.g. "araxxor_prime" → "araxxor prime", "liluzivault" → "liluzivault"
+    const normalizedUsername = normalizeBotUsername(cfg.username);
+    const profile = Environment.NODE_PROFILE ?? 'main';
+
     let packet: Packet;
 
     try {
-        const savePath = `data/players/main/${cfg.username}.sav`;
+        const savePath = `data/players/${profile}/${normalizedUsername}.sav`;
 
         let save: Buffer;
 
@@ -163,17 +180,17 @@ class BotManagerClass {
         packet = new Packet(save);
 
     } catch (err) {
-        console.error(`[BotManager] Failed loading save for ${cfg.username}:`, err);
+        console.error(`[BotManager] Failed loading save for ${normalizedUsername}:`, err);
         packet = new Packet(new Uint8Array(0));
     }
 
     let player: Player;
 
     try {
-        player = PlayerLoading.load(cfg.username, packet, null);
+        player = PlayerLoading.load(normalizedUsername, packet, null);
     } catch (err) {
-        console.error(`[BotManager] Corrupt PlayerLoading data for ${cfg.username}, spawning fresh`, err);
-        player = PlayerLoading.load(cfg.username, new Packet(new Uint8Array(0)), null);
+        console.error(`[BotManager] Corrupt PlayerLoading data for ${normalizedUsername}, spawning fresh`, err);
+        player = PlayerLoading.load(normalizedUsername, new Packet(new Uint8Array(0)), null);
     }
 
     // ─────────────────────────────────────────────
@@ -201,19 +218,19 @@ class BotManagerClass {
     try {
         BotAppearance.randomize(player);
     } catch (err) {
-        console.error(`[BotManager] BotAppearance failed for ${cfg.username}:`, err);
+        console.error(`[BotManager] BotAppearance failed for ${normalizedUsername}:`, err);
     }
 
     // ─────────────────────────────────────────────
-    // store XP baseline
+    // store XP baseline  (key = player.username so _checkLevelUps lookup matches)
     // ─────────────────────────────────────────────
-    this.prevLevels.set(cfg.username, new Uint8Array(player.baseLevels));
+    this.prevLevels.set(normalizedUsername, new Uint8Array(player.baseLevels));
 
     // ─────────────────────────────────────────────
     // spawn bot
     // ─────────────────────────────────────────────
     const bot = new BotPlayer(player, cfg.makePlanner());
-    this.bots.set(cfg.username, bot);
+    this.bots.set(normalizedUsername, bot);
 
     this.world.newPlayers.add(player);
 
@@ -222,27 +239,21 @@ class BotManagerClass {
     // ─────────────────────────────────────────────
     player.buildAppearance(InvType.WORN);
 
-    console.log(`[BotManager] Loaded bot: ${cfg.username}`);
+    console.log(`[BotManager] Loaded bot: ${normalizedUsername}`);
 
-    // Ensure a DB account row exists so LoginServer can find this bot by
-    // username during the player_logout flow and call updateHiscores().
-    ensureBotAccount(cfg.username).catch(err =>
-        console.error(`[BotManager] ensureBotAccount failed for ${cfg.username}:`, err)
+    // Ensure a DB account row exists so LoginServer can find this bot during
+    // the player_logout flow (by player.username = normalizedUsername), and
+    // store the id for periodic hiscore updates.
+    // NOTE: must use normalizedUsername — LoginServer looks up accounts by
+    // player.username (spaces), so the DB row must also use the normalized form.
+    ensureBotAccount(normalizedUsername).then(id => {
+        if (id !== null) this.accountIds.set(normalizedUsername, id);
+    }).catch(err =>
+        console.error(`[BotManager] ensureBotAccount failed for ${normalizedUsername}:`, err)
     );
 }
 
-    private _checkLevelUps(bot: BotPlayer): void {
-        const prev = this.prevLevels.get(bot.name);
-        if (!prev) return;
 
-        for (let stat = 0; stat < 21; stat++) {
-            const cur = getBaseLevel(bot.player, stat as PlayerStat);
-            if (cur > prev[stat]) {
-                bot.onLevelUp(stat as PlayerStat, cur);
-                prev[stat] = cur;
-            }
-        }
-    }
 
 private static readonly STAT_LABELS: string[] = [
     'Atk', 'Str', 'Def', 'HP', 'Rng', 'Pray', 'Mag',
@@ -253,6 +264,8 @@ private static readonly STAT_LABELS: string[] = [
 private _printStatus(): void {
     const activeBots = [...this.bots.values()].filter(bot => bot.player.slot !== -1);
     const now = new Date().toLocaleTimeString();
+
+
 
     console.log('');
     console.log(`┌──────────────────── BotManager Status ────────────────────┐`);

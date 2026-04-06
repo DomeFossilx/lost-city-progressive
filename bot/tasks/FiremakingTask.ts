@@ -241,7 +241,7 @@ private spawnFire(player: Player): void {
                     '[Firemaking] 🔥 burned log +${xp} XP (total=${this.lastXp})'
                 );
             }
-            this.cooldown = randInt(2, 4);
+            this.cooldown = randInt(2, 12);
             this.state = 'move';
             return;
         }
