@@ -26,6 +26,7 @@ import Player from '#/engine/entity/Player.js';
 import { PlayerStat, getBaseLevel } from '#/engine/bot/BotAction.js';
 import { BotPlayer } from '#/engine/bot/BotPlayer.js';
 import { setWorld, BotWorldHandle } from '#/engine/bot/BotWorld.js';
+import { ensureBotAccount } from '#/engine/bot/BotDatabase.js';
 import {
     BotGoalPlanner,
     makeSkiller, makeFighter, makeBalanced, makeRandom,
@@ -35,6 +36,7 @@ import Packet from '#/io/Packet.js';
 import { Locations } from '#/engine/bot/BotKnowledge.js';
 import { BotAppearance } from '#/engine/bot/BotAppearance.js';
 import InvType from '#/cache/config/InvType.js';
+import Environment from '#/util/Environment.js';
 const PLANNER_MAP = {
     skiller: makeSkiller,
     fighter: makeFighter,
@@ -94,8 +96,8 @@ class BotManagerClass {
     private world:      BotWorldHandle | null = null;
     private bots:       Map<string, BotPlayer>  = new Map();
     private prevLevels: Map<string, Uint8Array> = new Map();
-    private spawned     = false;
-    private tickCount   = 0;
+    private spawned    = false;
+    private tickCount  = 0;
 
     /**
      * Call from World.ts start() before this.cycle():
@@ -113,7 +115,15 @@ class BotManagerClass {
     /** Call from World.ts cycle() after processPlayers(). */
     tick(): void {
         if (!this.world) return;
-        if (this.world.shutdown || this.world.shutdownSoon) return;
+
+        // During shutdown the engine handles each bot's logout via the normal
+        // removePlayer() → flushPlayer() → loginThread → LoginServer path.
+        // LoginServer calls updateHiscores() and writes the .sav file there.
+        // Stop ticking bots early so they don't take new actions while being
+        // force-logged-out.
+        if (this.world.shutdownSoon || this.world.shutdown) {
+            return;
+        }
 
         this.tickCount++;
 
@@ -213,11 +223,18 @@ class BotManagerClass {
     player.buildAppearance(InvType.WORN);
 
     console.log(`[BotManager] Loaded bot: ${cfg.username}`);
+
+    // Ensure a DB account row exists so LoginServer can find this bot by
+    // username during the player_logout flow and call updateHiscores().
+    ensureBotAccount(cfg.username).catch(err =>
+        console.error(`[BotManager] ensureBotAccount failed for ${cfg.username}:`, err)
+    );
 }
 
     private _checkLevelUps(bot: BotPlayer): void {
         const prev = this.prevLevels.get(bot.name);
         if (!prev) return;
+
         for (let stat = 0; stat < 21; stat++) {
             const cur = getBaseLevel(bot.player, stat as PlayerStat);
             if (cur > prev[stat]) {
@@ -270,6 +287,7 @@ private _getAllSkillLevels(player: Player): number[] {
     }
     return levels;
 }
+
 
 private _skillRow(levels: number[], start: number, count: number): string {
     const parts: string[] = [];

@@ -14,6 +14,7 @@ import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
 import {
     findObjByName,
     findObjByPrefix,
+    interactHeldOp,
     pickupGroundItem,
     removeItem,
 } from '#/engine/bot/BotAction.js';
@@ -144,50 +145,44 @@ export class CombatTask extends BotTask {
             return;
         }
 
-        if (this.state === 'bury') {
-        const inv = player.getInventory(InvType.INV);
-        if (!inv) {
-            this.state = 'scan';
-            return;
-        }
-
-        // BIG BONES FIRST
-        for (let slot = 0; slot < inv.capacity; slot++) {
-            const item = inv.get(slot);
-            if (!item) continue;
-
-            if (item.id === Items.BIG_BONES) {
-                const moved = inv.remove(item.id, 1);
-
-                if (moved.completed > 0) {
-                    addXp(player, PlayerStat.PRAYER, 150);
-                    this._log(player, 'buried big bones +150 XP', 'bury_big');
-                    this.cooldown = randInt(2, 4);
-                }
-
+       if (this.state === 'bury') {
+            const inv = player.getInventory(InvType.INV);
+            if (!inv) {
+                this.state = 'scan';
                 return;
             }
-        }
 
-        // NORMAL BONES
-        for (let slot = 0; slot < inv.capacity; slot++) {
-            const item = inv.get(slot);
-            if (!item) continue;
+            // BIG BONES FIRST
+            for (let slot = 0; slot < inv.capacity; slot++) {
+                const item = inv.get(slot);
+                if (!item) continue;
 
-            if (item.id === Items.BONES) {
-                const moved = inv.remove(item.id, 1);
+                if (item.id === Items.BIG_BONES) {
+                    const moved = inv.remove(item.id, 1);
 
-                if (moved.completed > 0) {
-                    addXp(player, PlayerStat.PRAYER, 45);
+                    if (moved.completed > 0) {
+                        addXp(player, PlayerStat.PRAYER, 150);
+                        this._log(player, 'buried big bones +150 XP', 'bury_big');
+                        this.cooldown = randInt(2, 4);
+                    }
+
+                    return;
+                }
+            }
+
+            // NORMAL BONES
+            for (let slot = 0; slot < inv.capacity; slot++) {
+                const item = inv.get(slot);
+                if (!item) continue;
+
+                if (item.id === Items.BONES) {
+                    interactHeldOp(player, inv, item.id, slot, 1);
                     this._log(player, 'buried bones +45 XP', 'bury_small');
                     this.cooldown = randInt(2, 4);
+                    return;
                 }
-
-                return;
             }
-        }
 
-            // No bones found — should not happen with pickupGroundItem (synchronous),
             // but wait 1 extra tick as a safety net before giving up.
             this.buryWaitTicks++;
             if (this.buryWaitTicks < 2) {

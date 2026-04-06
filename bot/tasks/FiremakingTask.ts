@@ -22,6 +22,7 @@ import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
 import Loc from '#/engine/entity/Loc.js';
 import World from '#/engine/World.js';
 import { EntityLifeCycle } from '#/engine/entity/EntityLifeCycle.js';
+import { interactHeldOpU } from '#/engine/bot/BotAction.js';
 
 
 export class FiremakingTask extends BotTask {
@@ -45,6 +46,17 @@ export class FiremakingTask extends BotTask {
     }
 
     // ───────────────── LOG HELPERS ─────────────────
+        private getItemSlot(player: Player, itemId: number): number | null {
+        const inv = player.getInventory(InvType.INV);
+        if (!inv) return null;
+
+        for (let i = 0; i < inv.capacity; i++) {
+            const item = inv.get(i);
+            if (item && item.id === itemId) return i;
+        }
+
+        return null;
+    }
 
     private isLog(id: number): boolean {
         return (
@@ -197,42 +209,38 @@ private spawnFire(player: Player): void {
             return;
         }
 
-        // ───────────────── BURN ─────────────────
+             // ───────────────── BURN ─────────────────
 
         if (this.state === 'burn') {
             const logId = this.getFirstLog(player);
-
+            const inv = player.getInventory(InvType.INV);
             if (!logId) {
-                console.log(`[Firemaking] 📦 out of logs`);
+                console.log('[Firemaking] 📦 out of logs');
                 this.state = 'bank_walk';
                 return;
             }
-
-            const x = player.x;
-            const z = player.z;
-
-            const before = player.stats[PlayerStat.FIREMAKING];
-
-            const removed = removeItem(player, logId, 1);
-            if (!removed) {
-                console.log(`[Firemaking] ❌ failed to remove log`);
+            if(!inv) {
                 return;
             }
+            const before = player.stats[PlayerStat.FIREMAKING];
+            const slot = this.getItemSlot(player, logId);
+            if(!slot) return;
+            const o_slot = this.getItemSlot(player, Items.TINDERBOX);
+            if(!o_slot) return;
+            const success: boolean = interactHeldOpU(player, inv, logId, slot, Items.TINDERBOX, o_slot); //Simulate a real use item on item action
+            if(success) {
+                const xp = this.getXp(logId);
+                //this.spawnFire(player); <- no longer needed
+                player.stats[PlayerStat.FIREMAKING] = before + xp;
 
-            const xp = this.getXp(logId);
-            this.spawnFire(player);
-            player.stats[PlayerStat.FIREMAKING] = before + xp;
+                this.lastXp = player.stats[PlayerStat.FIREMAKING];
 
-
-
-            this.lastXp = player.stats[PlayerStat.FIREMAKING];
-
-            this.watchdog.notifyActivity();
-
-            console.log(
-                `[Firemaking] 🔥 burned log +${xp} XP (total=${this.lastXp})`
-            );
-
+                this.watchdog.notifyActivity();
+                //Delay this, or may not even need it?
+                console.log(
+                    '[Firemaking] 🔥 burned log +${xp} XP (total=${this.lastXp})'
+                );
+            }
             this.cooldown = randInt(2, 4);
             this.state = 'move';
             return;

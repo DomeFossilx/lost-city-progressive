@@ -52,6 +52,11 @@ import { MoveSpeed } from '#/engine/entity/MoveSpeed.js';
 import VarPlayerType from '#/cache/config/VarPlayerType.js';
 import Obj from '#/engine/entity/Obj.js';
 import ObjType from '#/cache/config/ObjType.js';
+import ScriptRunner from '#/engine/script/ScriptRunner.js';
+import ScriptProvider from '#/engine/script/ScriptProvider.js';
+import CategoryType from '#/cache/config/CategoryType.js';
+import { Inventory } from '#/engine/Inventory.js';
+import { Items } from '#/engine/bot/BotKnowledge.js';
 
 
 export { PlayerStat };
@@ -70,6 +75,97 @@ export { PlayerStat };
  * Must set moveSpeed=WALK first — updateMovement() skips its reset when
  * moveSpeed is INSTANT, permanently blocking headless player movement.
  */
+
+export function interactHeldOp(
+    player: Player,
+    inv: Inventory,
+    itemId: number,
+    slot: number,
+    op: 1 | 2 | 3 | 4 | 5 | 6
+): boolean {
+    const trigger = (ServerTriggerType.OPHELD1 + (op - 1)) as ServerTriggerType;
+    if (!inv || !inv.validSlot(slot) || !inv.hasAt(slot, itemId)) {
+        player.clearPendingAction();
+        return false;
+    }
+    const type = ObjType.get(itemId);
+    if (player.delayed) {
+        return false;
+    }
+
+    player.lastItem = itemId;
+    player.lastSlot = slot;
+    player.moveClickRequest = false;
+    player.faceEntity = -1;
+    player.masks |= player.entitymask;
+
+    const script = ScriptProvider.getByTrigger(trigger, type.id, type.category);
+    if (script) {
+        player.executeScript(ScriptRunner.init(script, player), true);
+    }
+
+    if (op === 1 && itemId === Items.BONES) {
+        console.log('BOT burying bone traditionally:', itemId);
+        return true;
+    }
+    return true;
+} 
+export function interactHeldOpU(
+    player: Player,
+    inv: Inventory,
+    itemId: number,
+    slot: number,
+    useItem: number,
+    useSlot: number
+): boolean {
+    if (player.delayed) {
+        return false;
+    }
+    player.lastItem = itemId;
+    player.lastSlot = slot;
+    player.lastUseItem = useItem;
+    player.lastUseSlot = useSlot;
+    if(inv.get(slot)?.id !== itemId || inv.get(useSlot)?.id !== useItem) {
+        console.log('Useitem data does not match!', itemId, useItem);
+        return false;
+    }
+    const objType = ObjType.get(player.lastItem);
+    const useObjType = ObjType.get(player.lastUseItem);
+
+    player.clearPendingAction();
+    player.faceEntity = -1;
+    player.masks |= player.entitymask;
+
+    // [opheldu,b]
+    let script = ScriptProvider.getByTriggerSpecific(ServerTriggerType.OPHELDU, objType.id, -1);
+
+    // [opheldu,a]
+    if (!script) {
+        script = ScriptProvider.getByTriggerSpecific(ServerTriggerType.OPHELDU, useObjType.id, -1);
+        [player.lastItem, player.lastUseItem] = [player.lastUseItem, player.lastItem];
+        [player.lastSlot, player.lastUseSlot] = [player.lastUseSlot, player.lastSlot];
+    }
+
+    // [opheld,b_category]
+    const objCategory = objType.category !== -1 ? CategoryType.get(objType.category) : null;
+    if (!script && objCategory) {
+        script = ScriptProvider.getByTriggerSpecific(ServerTriggerType.OPHELDU, -1, objCategory.id);
+    }
+
+    // [opheld,a_category]
+    const useObjCategory = useObjType.category !== -1 ? CategoryType.get(useObjType.category) : null;
+    if (!script && useObjCategory) {
+        script = ScriptProvider.getByTriggerSpecific(ServerTriggerType.OPHELDU, -1, useObjCategory.id);
+        [player.lastItem, player.lastUseItem] = [player.lastUseItem, player.lastItem];
+        [player.lastSlot, player.lastUseSlot] = [player.lastUseSlot, player.lastSlot];
+    }
+
+    if (script) {
+        player.executeScript(ScriptRunner.init(script, player), true);
+    }
+    return true;
+}
+
 export function walkTo(player: Player, destX: number, destZ: number): void {
     player.moveSpeed = MoveSpeed.WALK;
 
