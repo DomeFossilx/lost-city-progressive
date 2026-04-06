@@ -2,6 +2,12 @@
 
 # LOST CITY SINGLEPLAYER PROGRESSIVE
 
+instructions:
+
+fresh server, 254 cache, boot it up, everything boots correctly you can login? proceed to step 2
+download progressive repo
+extract and drag everything inside (bot, entity, etc etc folders) to freshserver\engine\src\engine
+
 ## **REVIEW OF PLANS**
 
 # **OVERVIEW**
