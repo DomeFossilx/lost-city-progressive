@@ -64,9 +64,3 @@ MISC:
 _mrsam 
 attackishere
 
-* 🪶 Fletching  
-* 🕵️ Thieving  
-* 🧗 Agility  
-* 🔮 Runecrafting  
-   👉 Indicates future expansion systems, likely requiring more complex world interactions.
-
