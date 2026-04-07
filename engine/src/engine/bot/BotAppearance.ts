@@ -90,14 +90,14 @@ export class BotAppearance {
             BotAppearance.set_appearance(player, MAN_HANDS_IDS[randInt(0, MAN_HANDS_IDS.length-1)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
             player.colors[4] = SKIN_TONES[randInt(0, SKIN_TONES.length-1)];
         } else {
-            BotAppearance.set_appearance(player, WOMAN_HAIR_IDS[randInt(0, WOMAN_HAIR_IDS.length)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
+            BotAppearance.set_appearance(player, WOMAN_HAIR_IDS[randInt(0, WOMAN_HAIR_IDS.length-1)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
             BotAppearance.set_appearance(player, MAN_JAW_IDS[4], 0); //Always 0 for women? //4 is bald id
-            BotAppearance.set_appearance(player, WOMAN_TORSO_IDS[randInt(0, WOMAN_TORSO_IDS.length)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
-            BotAppearance.set_appearance(player, WOMAN_ARMS_IDS[randInt(0, WOMAN_ARMS_IDS.length)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
-            BotAppearance.set_appearance(player, WOMAN_LEGS_IDS[randInt(0, WOMAN_LEGS_IDS.length)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
-            BotAppearance.set_appearance(player, WOMAN_FEET_IDS[randInt(0, WOMAN_FEET_IDS.length)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
-            BotAppearance.set_appearance(player, WOMAN_HANDS_IDS[randInt(0, WOMAN_HANDS_IDS.length)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
-            player.colors[4] = SKIN_TONES[randInt(0, SKIN_TONES.length)];
+            BotAppearance.set_appearance(player, WOMAN_TORSO_IDS[randInt(0, WOMAN_TORSO_IDS.length-1)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
+            BotAppearance.set_appearance(player, WOMAN_ARMS_IDS[randInt(0, WOMAN_ARMS_IDS.length-1)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
+            BotAppearance.set_appearance(player, WOMAN_LEGS_IDS[randInt(0, WOMAN_LEGS_IDS.length-1)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
+            BotAppearance.set_appearance(player, WOMAN_FEET_IDS[randInt(0, WOMAN_FEET_IDS.length-1)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
+            BotAppearance.set_appearance(player, WOMAN_HANDS_IDS[randInt(0, WOMAN_HANDS_IDS.length-1)], HAIR_COLOURS[randInt(0, HAIR_COLOURS.length-1)]);
+            player.colors[4] = SKIN_TONES[randInt(0, SKIN_TONES.length-1)];
         }
 
         worn.set(3, item(pick(STARTER_WEAPONS), player)); // weapon
