@@ -6,6 +6,8 @@ instructions:
 2. download progressive repo
 3. extract and drag everything inside to freshserver directory, use start.bat for updated launcher
 
+[Join our Discord](https://discord.gg/pWNjzFKU4V)
+
 ## **REVIEW OF PLANS**
 
 # **OVERVIEW**
