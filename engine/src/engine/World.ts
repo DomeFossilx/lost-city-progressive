@@ -746,10 +746,10 @@ class World {
             force = true;
 
         // ── Keep-alive (headless bot / active player) ────────────────────
-        } else {
-            player.lastResponse = this.currentTick;
-            player.lastConnected = this.currentTick;
-        }
+} else if (player.is_bot) {
+    player.lastResponse = this.currentTick;
+    player.lastConnected = this.currentTick;
+}
 
         // ── Connection timeout (30s) ─────────────────────────────────────
         if (

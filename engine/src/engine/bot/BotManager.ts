@@ -231,7 +231,7 @@ class BotManagerClass {
     // ─────────────────────────────────────────────
     const bot = new BotPlayer(player, cfg.makePlanner());
     this.bots.set(normalizedUsername, bot);
-
+    player.is_bot = true;  // mark as headless bot
     this.world.newPlayers.add(player);
 
     // ─────────────────────────────────────────────

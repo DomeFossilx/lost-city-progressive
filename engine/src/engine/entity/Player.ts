@@ -75,8 +75,14 @@ import VarBitType from '#/cache/config/VarBitType.js';
 import FriendlistLoaded from '#/network/game/server/model/FriendlistLoaded.js';
 import UpdateIgnoreList from '#/network/game/server/model/UpdateIgnoreList.js';
 import Midi from '#/cache/midi/Midi.js';
+import fs from "fs";
+import path from "path";
+
 
 const levelExperience = new Int32Array(99);
+
+
+
 
 let acc = 0;
 for (let i = 0; i < 99; i++) {
@@ -85,6 +91,8 @@ for (let i = 0; i < 99; i++) {
     acc += delta;
     levelExperience[i] = Math.floor(acc / 4) * 10;
 }
+
+
 
 export function getLevelByExp(exp: number) {
     for (let i = 98; i >= 0; i--) {
@@ -95,6 +103,70 @@ export function getLevelByExp(exp: number) {
 
     return 1;
 }
+
+
+
+
+export function isAddressingBot(message: string, bot: Player): boolean {
+    const msg = message.toLowerCase();
+
+    const names = [bot.username, bot.displayName].filter(Boolean) as string[];
+
+    for (const name of names) {
+        // Normalize: remove underscores/dashes, strip numbers
+        const parts = name
+            .toLowerCase()
+            .replace(/[_-]/g, ' ')
+            .replace(/\d+/g, '') // remove numbers
+            .split(' ')
+            .filter(part => part.length > 0);
+
+        for (const part of parts) {
+            if (msg.includes(part)) return true;
+        }
+    }
+
+    return false;
+}
+
+interface IntentEntry {
+    id: string;
+    patterns: string[];
+    replies: string[];
+}
+
+interface ChatResponses {
+    greetings: { patterns: string[]; replies: string[] };
+    help:      { patterns: string[]; replies: string[] };
+    intents:   IntentEntry[];
+    greetingReplies: string[];
+    fallback:  string[];
+}
+
+// Loaded once at module level — no per-tick file I/O
+let chatResponses: ChatResponses | null = null;
+
+function loadChatResponses(): ChatResponses {
+    if (chatResponses) return chatResponses;
+    const filePath = path.join('data', 'bot', 'chat_responses.json');
+    chatResponses = JSON.parse(fs.readFileSync(filePath, 'utf8')) as ChatResponses;
+    return chatResponses;
+}
+
+function pickRandom(arr: string[], name?: string): string {
+    const raw = arr[Math.floor(Math.random() * arr.length)];
+    return name ? raw.replace(/\{name\}/g, name) : raw;
+}
+
+interface BotMemory {
+    lastSpeakerId?: string;
+    lastMessage?: string;
+    lastInteractionTime?: number;
+    state?: 'idle' | 'awaiting_response' | 'processing';
+    context?: string[]; // small chat history
+}
+
+
 
 export function getExpByLevel(level: number) {
     return levelExperience[level - 2];
@@ -2304,5 +2376,98 @@ export default class Player extends PathingEntity {
         }
 
         return super.isValid();
+    }
+
+
+
+
+  processIntent(message: string): string {
+    const data = loadChatResponses();
+    const msg = message.toLowerCase();
+
+    // Greetings
+    if (data.greetings.patterns.some(p => msg.includes(p))) {
+        return pickRandom(data.greetings.replies);
+    }
+
+    // Help
+    if (data.help.patterns.some(p => msg.includes(p))) {
+        return pickRandom(data.help.replies);
+    }
+
+    // Named intents
+    for (const intent of data.intents) {
+        if (intent.patterns.some(p => msg.includes(p))) {
+            return pickRandom(intent.replies, this.displayName);
+        }
+    }
+
+    // Fallback
+    return pickRandom(data.fallback);
+}
+
+getGreeting(): string {
+    const data = loadChatResponses();
+    return pickRandom(data.greetingReplies, this.displayName);
+}
+
+     memory?: BotMemory;
+    is_bot:boolean = false;
+    /**
+     * AI Chat (For bots)
+     * @param name
+     * @param mes
+     */
+    sendMessageToNearbyBots(name: string, mes: string) {
+        if (!mes?.length) return;
+        for (const bot of World.players) {
+            this.botChatCheck(name, mes, bot);
+        }
+        //Both lists
+        for (const bot of World.newPlayers) {
+            this.botChatCheck(name, mes, bot);
+        }
+    }
+botChatCheck(name: string, mes: string, bot: Player) {
+        if (!bot) return;
+        if (bot.uid === -1) return;
+        if (isClientConnected(bot)) return; //Means we're a bot
+        if (!bot.is_bot) return; //Double make sure we're a bot
+        const distanceToX = Math.abs(bot.x - this.x);
+        const distanceToZ = Math.abs(bot.z - this.z);
+        if (Math.max(distanceToX, distanceToZ) > 10) {
+            return;
+        }
+
+        const memory = bot.memory ??= {
+            state: 'idle',
+            context: []
+        };
+
+        const addressed = isAddressingBot(mes, bot);
+
+        // 🟢 First contact (name mentioned)
+        if (addressed) {
+            memory.lastSpeakerId = name;
+            memory.lastMessage = mes;
+            memory.lastInteractionTime = Date.now();
+            memory.state = 'awaiting_response';
+
+            bot.say(this.getGreeting());
+            return;
+        }
+
+        // 🟡 Continue conversation if already engaged
+        if (
+            memory.lastSpeakerId === name &&
+            Date.now() - (memory.lastInteractionTime ?? 0) < 15000 // 15s timeout
+        ) {
+            memory.context?.push(mes);
+            memory.lastMessage = mes;
+            memory.lastInteractionTime = Date.now();
+
+            const response = this.processIntent(mes);
+            bot.say(response);
+        }
     }
 }
