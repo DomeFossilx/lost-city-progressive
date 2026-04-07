@@ -1,0 +1,88 @@
+{
+    "greetings": {
+        "patterns": ["hello", "hi", "hey", "yo", "hiya", "sup", "greetings"],
+        "replies": [
+            "Hello there!",
+            "Hey!",
+            "Hi!",
+            "Greetings!",
+            "Hey mate!",
+            "Hiya!"
+        ]
+    },
+    "help": {
+        "patterns": ["help", "assist", "support"],
+        "replies": [
+            "Sure, what do you need help with?",
+            "I can try to help, what is it?",
+            "Need some assistance?",
+            "Of course, what do you need?"
+        ]
+    },
+    "intents": [
+        {
+            "id": "oziach",
+            "patterns": ["oziach"],
+            "replies": [
+                "Oziach? He's in Edgeville near the shop.",
+                "You'll find Oziach in Edgeville, close to the shop.",
+                "I think Oziach is in Edgeville by the shop."
+            ]
+        },
+        {
+            "id": "guards",
+            "patterns": ["guard", "guards"],
+            "replies": [
+                "Guards are around Varrock and Falador.",
+                "Varrock guards are near the castle.",
+                "You'll find Falador guards patrolling the city walls.",
+                "Guards are usually in major cities."
+            ]
+        },
+        {
+            "id": "knife",
+            "patterns": ["knife"],
+            "replies": [
+                "I think you can find one in Lumbridge basement!",
+                "Knives are found upstairs in Varrock general store.",
+                "Try checking a general store for a knife."
+            ]
+        },
+        {
+            "id": "where",
+            "patterns": ["where"],
+            "replies": [
+                "I'm not sure, but I can try to find out.",
+                "Where exactly?",
+                "Depends on what you're looking for.",
+                "I might know, can you clarify?"
+            ]
+        },
+        {
+            "id": "thanks",
+            "patterns": ["thank"],
+            "replies": [
+                "You're very welcome, {name}!",
+                "No problem!",
+                "You're welcome.",
+                "Anytime, {name}!"
+            ]
+        }
+    ],
+    "greetingReplies": [
+        "Yes {name}?",
+        "Can I help, {name}?",
+        "What do you need, {name}?",
+        "Hmm {name}?",
+        "Hey there {name}.",
+        "Sup {name}?",
+        "Yo {name}.",
+        "What's up {name}?"
+    ],
+    "fallback": [
+        "I don't quite understand, could you rephrase?",
+        "Hmm? Could you clarify that?",
+        "Sorry, I don't know about that.",
+        "Can you try asking differently?"
+    ]
+}
