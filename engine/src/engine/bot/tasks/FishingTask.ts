@@ -5,13 +5,13 @@
 import {
     BotTask, Player, Npc, InvType,
     walkTo, interactNpc, interactNpcOp,
-    findNpcBySuffix, findNpcByPrefix,
+    findNpcBySuffix,
     hasItem, countItem, isInventoryFull, isNear,
     getBaseLevel, PlayerStat,
     Items, Locations, getProgressionStep,
     teleportToSafety, teleportNear, randInt, bankInvId, INTERACT_TIMEOUT,
     StuckDetector, ProgressWatchdog,
-    openNearbyGate, botJitter, nearestBank,
+    openNearbyGate, botJitter, advanceBankWalk,
 } from '#/engine/bot/tasks/BotTaskBase.js';
 import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
 import { getCombatLevel, getNpcCombatLevel, findAggressorNpc } from '#/engine/bot/BotAction.js';
@@ -92,24 +92,9 @@ export class FishingTask extends BotTask {
 
         // ── Bank flow ────────────────────────────────────────────────────────
         if (this.state === 'bank_walk') {
-            const [bx, bz] = nearestBank(player);
-
-            if (!isNear(player, bx, bz, 8)) {
-                this._stuckWalk(player, bx, bz);
-                return;
-            }
-
-            const banker = findNpcByPrefix(player.x, player.z, player.level, 'banker', 10);
-            if (!banker) {
-                walkTo(player, bx, bz);
-                return;
-            }
-            // Walk close to the banker first — prevents the engine routing backward
-            // around bank counters when setInteraction is called from 8+ tiles away.
-            if (!isNear(player, banker.x, banker.z, 3)) { walkTo(player, banker.x, banker.z); return; }
-
-            interactNpcOp(player, banker, 3);
-            this.cooldown = 4;
+            const result = advanceBankWalk(player, this.stuck);
+            if (result === 'walk') return;
+            this.cooldown = result === 'ready' ? 3 : 0;
             this.state = 'bank_done';
             return;
         }

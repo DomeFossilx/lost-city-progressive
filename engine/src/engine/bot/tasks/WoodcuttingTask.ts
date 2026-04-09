@@ -18,16 +18,15 @@
 import LocType from '#/cache/config/LocType.js';
 import {
     BotTask, Player, Loc, InvType,
-    walkTo, interactLoc, interactNpcOp,
+    walkTo, interactLoc,
     findLocByPrefix, findNpcByName,
     hasItem, addItem, isInventoryFull, isNear,
     getBaseLevel, PlayerStat,
     Items, Locations, getProgressionStep,
     teleportToSafety, teleportNear, randInt, bankInvId, INTERACT_TIMEOUT, StuckDetector, ProgressWatchdog,
-    isAdjacentToLoc, openNearbyGate, botJitter, nearestBank,
+    isAdjacentToLoc, openNearbyGate, botJitter, advanceBankWalk,
 } from '#/engine/bot/tasks/BotTaskBase.js';
 import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
-import { findNpcByPrefix } from './BotTaskBase.js';
 import { getCombatLevel, getNpcCombatLevel, findAggressorNpc } from '#/engine/bot/BotAction.js';
 
 /** Draynor village woodcutting spots — aggressive Dark Wizards patrol here, minimum combat 16. */
@@ -103,16 +102,13 @@ export class WoodcuttingTask extends BotTask {
         }
 
         // ── Bank logs ─────────────────────────────────────────────────────────
-  if (this.state === 'bank_walk') {
-            const [bx, bz] = nearestBank(player);
-            if (!isNear(player, bx, bz, 8)) { this._stuckWalk(player, bx, bz); return; }
-            const banker = findNpcByPrefix(player.x, player.z, player.level, 'banker', 10);
-            if (!banker) { walkTo(player, bx, bz); return; }
-            // Walk close to the banker first — prevents the engine routing backward
-            // around bank counters when setInteraction is called from 8+ tiles away.
-            if (!isNear(player, banker.x, banker.z, 3)) { walkTo(player, banker.x, banker.z); return; }
-            interactNpcOp(player, banker, 3);
-            this.cooldown = 4; this.state = 'bank_done'; return;
+        if (this.state === 'bank_walk') {
+            const result = advanceBankWalk(player, this.stuck);
+            if (result === 'walk') return;
+            // 'ready' = interaction queued; 'direct' = deposit without UI
+            this.cooldown = result === 'ready' ? 3 : 0;
+            this.state = 'bank_done';
+            return;
         }
 
         if (this.state === 'bank_done') {

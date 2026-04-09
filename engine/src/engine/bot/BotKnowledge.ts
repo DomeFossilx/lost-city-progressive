@@ -157,7 +157,7 @@ export const Locations = {
     DRAYNOR_BANK:            [3092, 3245, 0] as [number, number, number],  // ✅ primary bot bank
     VARROCK_WEST_BANK:       [3185, 3444, 0] as [number, number, number],  // ✅
     VARROCK_EAST_BANK:       [3253, 3420, 0] as [number, number, number],  // ✅
-    AL_KHARID_BANK:          [3269, 3167, 0] as [number, number, number],  // ⛩ inside Al Kharid
+    AL_KHARID_BANK:          [3269, 3163, 0] as [number, number, number],  // ⛩ inside Al Kharid (2 tiles past south door)
     FALADOR_EAST_BANK:       [3013, 3355, 0] as [number, number, number],  // ✅
 
     // ── Shops ─────────────────────────────────────────────────────────────────

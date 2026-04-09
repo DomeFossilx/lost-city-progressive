@@ -11,7 +11,7 @@ import Loc from '#/engine/entity/Loc.js';
 import InvType from '#/cache/config/InvType.js';
 import { Inventory } from '#/engine/Inventory.js';
 import {
-    walkTo, interactNpc, interactNpcOp, interactLoc,
+    walkTo, interactNpc, interactNpcOp, interactLoc, interactLocOp,
     findNpcByName, findNpcByPrefix, findNpcBySuffix, findLocByPrefix, findLocByName,
     hasItem, countItem, addItem, removeItem, isInventoryFull,
     getBaseLevel, PlayerStat, hasWaypoints,
@@ -91,6 +91,7 @@ const BOT_BANKS: ReadonlyArray<[number, number, number]> = [
     Locations.VARROCK_WEST_BANK,
     Locations.VARROCK_EAST_BANK,
     Locations.AL_KHARID_BANK,
+    Locations.FALADOR_EAST_BANK,
     
 ];
 
@@ -166,7 +167,7 @@ export abstract class BotTask {
 export type { SkillStep } from '#/engine/bot/BotKnowledge.js';
 export {
     Player, Npc, Loc, InvType, Inventory,
-    walkTo, interactNpc, interactNpcOp, interactLoc,
+    walkTo, interactNpc, interactNpcOp, interactLoc, interactLocOp,
     findNpcByName, findNpcByPrefix, findNpcBySuffix, findLocByPrefix, findLocByName,
     hasItem, countItem, addItem, removeItem, isInventoryFull,
     getBaseLevel, PlayerStat, hasWaypoints,
@@ -175,6 +176,79 @@ export {
     getMissingPurchases, STARTING_COINS,
     openNearbyGate, isAdjacentToLoc,
 };
+
+// ── Shared banking helper ─────────────────────────────────────────────────────
+
+/**
+ * Drives the 'bank_walk' state for any gathering task.
+ *
+ * Priority order:
+ *   1. Bank booth (bankbooth loc, op2 = Use-quickly → @openbank immediately, no dialog).
+ *      Works at ALL banks.  Avoids NPC name ambiguity entirely.
+ *   2. Banker NPC by prefix 'banker' (Lumbridge 2nd floor, Draynor, Varrock…).
+ *   3. Banker NPC by prefix 'kharidbanker' (Al Kharid — debug name starts with 'kharid').
+ *   4. Direct fallback: no interactive entity found but bot is already at the bank
+ *      tile — proceed to deposit anyway (deposit functions work directly on
+ *      inventory objects and do NOT require the bank UI to be open).
+ *
+ * Returns:
+ *   'walk'   — still navigating, caller should return for this tick
+ *   'ready'  — interaction queued (or fallback triggered), set cooldown + state
+ *   'direct' — fallback: skip interaction, deposit immediately
+ */
+export function advanceBankWalk(
+    player: Player,
+    stuckDetector: StuckDetector,
+): 'walk' | 'ready' | 'direct' {
+    const [bx, bz] = nearestBank(player);
+
+    if (!isNear(player, bx, bz, 3)) {
+        // Still walking — drive bot all the way to the bank coord (which should be
+        // inside the building) before the booth search activates.
+        if (!stuckDetector.check(player, bx, bz)) {
+            walkTo(player, bx, bz);
+        } else if (stuckDetector.desperatelyStuck) {
+            teleportNear(player, bx, bz);
+            stuckDetector.reset();
+        } else {
+            walkTo(player, bx + randInt(-4, 4), bz + randInt(-4, 4));
+        }
+        return 'walk';
+    }
+
+    // ── At bank (inside): try booth first ────────────────────────────────────
+    // Search radius 6 — large enough to find booths across the floor but small
+    // enough not to reach through the walls of the building from outside.
+    // The bot is already at the interior coord so no wall-pierce is possible.
+    const booth = findLocByName(player.x, player.z, player.level, 'bankbooth', 6);
+    if (booth) {
+        if (!isNear(player, booth.x, booth.z, 1)) {
+            walkTo(player, booth.x, booth.z);
+            return 'walk';
+        }
+        interactLocOp(player, booth, 2); // op2 = Use-quickly → @openbank, no dialog
+        return 'ready';
+    }
+
+    // ── Fallback: banker NPC ──────────────────────────────────────────────────
+    // Al Kharid bankers have debug names starting with 'kharidbanker', not 'banker'.
+    const banker =
+        findNpcByPrefix(player.x, player.z, player.level, 'banker', 10) ??
+        findNpcByPrefix(player.x, player.z, player.level, 'kharidbanker', 10);
+    if (banker) {
+        if (!isNear(player, banker.x, banker.z, 3)) {
+            walkTo(player, banker.x, banker.z);
+            return 'walk';
+        }
+        interactNpcOp(player, banker, 3); // op3 = Bank on standard bankers
+        return 'ready';
+    }
+
+    // ── Ultimate fallback: deposit without UI interaction ─────────────────────
+    // Deposit functions use player.getInventory(bankInvId()) directly — no open
+    // bank UI required.  Only reached if no booth or NPC is visible.
+    return 'direct';
+}
 
 // ── StuckDetector ─────────────────────────────────────────────────────────────
 
@@ -271,7 +345,7 @@ export class ProgressWatchdog {
      *                        Generous enough to cover long walks (Barbarian Village,
      *                        Karamja ship travel), but catches indefinite oscillation.
      */
-    constructor(stallTickLimit = 150) {
+    constructor(stallTickLimit = 200) {
         this.limit = stallTickLimit;
     }
 

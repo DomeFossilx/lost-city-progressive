@@ -9,7 +9,7 @@ import {
     INTERACT_TIMEOUT, StuckDetector, ProgressWatchdog,
     openNearbyGate,
     addXp, setCombatStyle,
-    botJitter, nearestBank,
+    botJitter, advanceBankWalk,
 } from '#/engine/bot/tasks/BotTaskBase.js';
 import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
 import {
@@ -136,9 +136,6 @@ export class CombatTask extends BotTask {
         if (this.interrupted) return;
 
         const banking =
-            this.state === 'shop_walk' ||
-            this.state === 'shop_open' ||
-            this.state === 'shop_sell' ||
             this.state === 'bank_walk' ||
             this.state === 'bank_deposit';
 
@@ -159,7 +156,7 @@ export class CombatTask extends BotTask {
         // If an NPC that we did not initiate combat with starts chasing the bot
         // and its combat level exceeds the bot's, retreat to the spawn area.
         // Skip this check while banking/shopping — the bot is already leaving.
-        const safeStates = ['bank_walk', 'bank_deposit', 'shop_walk', 'shop_open', 'shop_sell', 'flee', 'bury'];
+        const safeStates = ['bank_walk', 'bank_deposit', 'flee', 'bury'];
         if (!safeStates.includes(this.state)) {
             const aggressor = findAggressorNpc(player, 8);
             if (aggressor && aggressor !== this.currentNpc) {
@@ -262,9 +259,9 @@ export class CombatTask extends BotTask {
 
         // ── INVENTORY FULL ───────────────────────────
         if (isInventoryFull(player) &&
-            !['bank_walk', 'bank_deposit', 'shop_sell', 'shop_open'].includes(this.state)) {
-            this._log(player, 'INVENTORY FULL → shop_walk', 'inv_full');
-            this.state = 'shop_walk';
+            !['bank_walk', 'bank_deposit'].includes(this.state)) {
+            this._log(player, 'INVENTORY FULL → bank_walk', 'inv_full');
+            this.state = 'bank_walk';
             this.currentNpc = null;
             return;
         }
@@ -311,22 +308,10 @@ export class CombatTask extends BotTask {
 
         // ── BANK ──────────────────────────────────────
         if (this.state === 'bank_walk') {
-            const [bx, bz] = nearestBank(player);
-
-            if (!isNear(player, bx, bz, 8)) {
-                this._stuckWalk(player, bx, bz);
-                return;
-            }
-
-            const banker = findNpcByPrefix(player.x, player.z, player.level, 'banker', 10);
-            if (!banker) return;
-            // Walk close to the banker first — prevents the engine routing backward
-            // around bank counters when setInteraction is called from 8+ tiles away.
-            if (!isNear(player, banker.x, banker.z, 3)) { walkTo(player, banker.x, banker.z); return; }
-
-            interactNpcOp(player, banker, 3);
+            const result = advanceBankWalk(player, this.stuck);
+            if (result === 'walk') return;
+            this.cooldown = result === 'ready' ? 3 : 0;
             this.state = 'bank_deposit';
-            this.cooldown = 2;
             return;
         }
 
