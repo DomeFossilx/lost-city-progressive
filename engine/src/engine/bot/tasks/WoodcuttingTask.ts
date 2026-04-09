@@ -135,6 +135,16 @@ export class WoodcuttingTask extends BotTask {
         if (this.state === 'walk') {
             const [lx, lz, ll] = this.step.location;
             if (!isNear(player, lx, lz, 15, ll)) {
+                // Via waypoint: route through intermediate coord before destination.
+                // Used to steer around obstacles (e.g. Draynor Mansion for Barbarian
+                // Village willows).  Only apply when the bot hasn't yet passed it —
+                // check player.z so a bot already north of the waypoint skips it.
+                const via = this.step.via;
+                if (via && player.level === via[2] && player.z < via[1] && !isNear(player, via[0], via[1], 5)) {
+                    const [jx, jz] = botJitter(player, via[0], via[1], 3);
+                    this._stuckWalk(player, jx, jz);
+                    return;
+                }
                 const [jx, jz] = botJitter(player, lx, lz, 5);
                 this._stuckWalk(player, jx, jz);
                 return;

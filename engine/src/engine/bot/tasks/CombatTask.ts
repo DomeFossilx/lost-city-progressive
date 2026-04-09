@@ -330,6 +330,15 @@ export class CombatTask extends BotTask {
             const [lx, lz, ll] = this.step.location;
 
             if (!isNear(player, lx, lz, 15, ll)) {
+                // Via waypoint: route through intermediate coord before destination.
+                // Used to steer around obstacles (e.g. Draynor Mansion for Barbarian
+                // Village combat area).  Only apply when the bot hasn't yet passed it.
+                const via = this.step.via;
+                if (via && player.level === via[2] && player.z < via[1] && !isNear(player, via[0], via[1], 5)) {
+                    const [jx, jz] = botJitter(player, via[0], via[1], 3);
+                    this._stuckWalk(player, jx, jz);
+                    return;
+                }
                 const [jx, jz] = botJitter(player, lx, lz, 6);
                 this._stuckWalk(player, jx, jz);
                 return;
@@ -841,13 +850,19 @@ export class CombatTask extends BotTask {
         const bank = player.getInventory(bid);
         if (!bank) return;
 
+        // Keep 200gp in inventory — enough for ~20 Al Kharid gate passes (10gp each)
+        // so the bot can exit after banking and reach its next task location.
+        // Depositing every coin leaves the bot stranded inside gated areas.
+        const KEEP_COINS = 200;
+
         for (let slot = 0; slot < inv.capacity; slot++) {
             const item = inv.get(slot);
             if (!item || item.id !== Items.COINS) continue;
 
-            const moved = inv.remove(item.id, item.count);
-            if (moved.completed > 0) {
-                bank.add(Items.COINS, moved.completed);
+            const toDeposit = Math.max(0, item.count - KEEP_COINS);
+            if (toDeposit > 0) {
+                const moved = inv.remove(item.id, toDeposit);
+                if (moved.completed > 0) bank.add(Items.COINS, moved.completed);
             }
         }
     }

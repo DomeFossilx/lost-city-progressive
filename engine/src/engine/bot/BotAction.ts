@@ -123,9 +123,14 @@ const GATEWAY_REGIONS: GatewayRegion[] = [
         // back toward Lumbridge or Draynor hit the same toll wall.  Approach
         // the inside gate tile (3270, 3228) and teleport to the Lumbridge side
         // (3265, 3228) — one tile west of the wall opening.
+        //
+        // No z-range constraint on destInRegion: a bot heading to any destination
+        // with x < 3267 (e.g. Barbarian Village via waypoint z=3340, Draynor bank
+        // z=3245) must still exit through the west gate regardless of how far
+        // north the final destination is.
         name: 'AlKharidExit',
-        destInRegion:   (x, z) => x < 3267 && z >= 3155 && z <= 3242,
-        playerInRegion: (x, z) => x < 3267 && z >= 3155 && z <= 3242,
+        destInRegion:   (x, _z) => x < 3267,
+        playerInRegion: (x, _z) => x < 3267,
         approachX: 3270,
         approachZ: 3228,
         arrivalRadius: 4,

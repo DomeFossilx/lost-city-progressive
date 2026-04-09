@@ -176,6 +176,7 @@ export const Locations = {
     OAKS_DRAYNOR:            [3088, 3236, 0] as [number, number, number],  // ✅ oaks south of Draynor bank
     WILLOWS_DRAYNOR:         [3180, 3270, 0] as [number, number, number],  // ✅ willows east of Draynor
     WILLOWS_BARBARIAN:       [3048, 3422, 0] as [number, number, number],  // ✅ willows along River Lum — gate-free
+    WILLOWS_BARBARIAN_VIA:   [3045, 3340, 0] as [number, number, number],  // ↗ waypoint west of Draynor Mansion (3110,3329)
     YEWS_VARROCK:            [3204, 3499, 0] as [number, number, number],  // ⛩ north Varrock — VarrockNorth gateway
     YEWS_FALADOR:            [2987, 3340, 0] as [number, number, number],  // ✅ south-east of Falador, near east bank
 
@@ -373,6 +374,7 @@ export interface SkillStep {
     maxLevel:       number;
     action:         string;
     location:       [number, number, number];
+    via?:           [number, number, number]; // optional waypoint to route through before location
     toolItemIds:    number[];
     xpPerAction:    number;
     ticksPerAction: number;
@@ -393,7 +395,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         { minLevel: 1,  maxLevel: 14, action: 'woodcut', location: Locations.TREES_DRAYNOR,   toolItemIds: [Items.BRONZE_AXE],  xpPerAction: 250,  ticksPerAction: 5, successRate: 0.65, itemGained: Items.LOGS        },
         { minLevel: 15, maxLevel: 29, action: 'woodcut', location: Locations.OAKS_DRAYNOR,      toolItemIds: [Items.IRON_AXE],    xpPerAction: 375,  ticksPerAction: 5, successRate: 0.60, itemGained: Items.OAK_LOGS    },
         { minLevel: 30, maxLevel: 59, action: 'woodcut', location: Locations.WILLOWS_DRAYNOR,   toolItemIds: [Items.STEEL_AXE],   xpPerAction: 675,  ticksPerAction: 4, successRate: 0.65, itemGained: Items.WILLOW_LOGS },
-        { minLevel: 30, maxLevel: 59, action: 'woodcut', location: Locations.WILLOWS_BARBARIAN, toolItemIds: [Items.STEEL_AXE],   xpPerAction: 675,  ticksPerAction: 4, successRate: 0.65, itemGained: Items.WILLOW_LOGS },
+        { minLevel: 30, maxLevel: 59, action: 'woodcut', location: Locations.WILLOWS_BARBARIAN, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.STEEL_AXE],   xpPerAction: 675,  ticksPerAction: 4, successRate: 0.65, itemGained: Items.WILLOW_LOGS },
         { minLevel: 60, maxLevel: 99, action: 'woodcut', location: Locations.YEWS_VARROCK,      toolItemIds: [Items.STEEL_AXE], xpPerAction: 1750, ticksPerAction: 7, successRate: 0.40, itemGained: Items.YEW_LOGS    },
         { minLevel: 60, maxLevel: 99, action: 'woodcut', location: Locations.YEWS_FALADOR,      toolItemIds: [Items.STEEL_AXE], xpPerAction: 1750, ticksPerAction: 7, successRate: 0.40, itemGained: Items.YEW_LOGS    },
     ],
@@ -409,9 +411,9 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         { minLevel: 1,  maxLevel: 19,  action: 'fish', location: Locations.FISH_DRAYNOR,   toolItemIds: [Items.SMALL_FISHING_NET],              xpPerAction: 100, ticksPerAction: 5, successRate: 0.60, itemGained: Items.RAW_SHRIMP                                    },
         { minLevel: 1,  maxLevel: 19,  action: 'fish', location: Locations.FISH_KARAMJA,   toolItemIds: [Items.SMALL_FISHING_NET],              xpPerAction: 100, ticksPerAction: 5, successRate: 0.60, itemGained: Items.RAW_SHRIMP                                    },
         // Level 20-29: fly rod — trout at Barbarian Village
-        { minLevel: 20, maxLevel: 29, action: 'fish', location: Locations.FISH_BARBARIAN, toolItemIds: [Items.FLY_FISHING_ROD, Items.FEATHER],  xpPerAction: 500, ticksPerAction: 5, successRate: 0.55, itemGained: Items.RAW_TROUT,   itemConsumed: Items.FEATHER      },
+        { minLevel: 20, maxLevel: 29, action: 'fish', location: Locations.FISH_BARBARIAN, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.FLY_FISHING_ROD, Items.FEATHER],  xpPerAction: 500, ticksPerAction: 5, successRate: 0.55, itemGained: Items.RAW_TROUT,   itemConsumed: Items.FEATHER      },
         // Level 30-39: fly rod — salmon at Barbarian Village
-        { minLevel: 30, maxLevel: 39, action: 'fish', location: Locations.FISH_BARBARIAN, toolItemIds: [Items.FLY_FISHING_ROD, Items.FEATHER],  xpPerAction: 700, ticksPerAction: 5, successRate: 0.50, itemGained: Items.RAW_SALMON,  itemConsumed: Items.FEATHER      },
+        { minLevel: 30, maxLevel: 39, action: 'fish', location: Locations.FISH_BARBARIAN, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.FLY_FISHING_ROD, Items.FEATHER],  xpPerAction: 700, ticksPerAction: 5, successRate: 0.50, itemGained: Items.RAW_SALMON,  itemConsumed: Items.FEATHER      },
         // Level 40-49: cage — lobster at Karamja (boat-routed via Port Sarim)
         { minLevel: 40, maxLevel: 49, action: 'fish', location: Locations.FISH_KARAMJA,   toolItemIds: [Items.LOBSTER_POT],                    xpPerAction: 900, ticksPerAction: 5, successRate: 0.50, itemGained: Items.RAW_LOBSTER                                    },
         // Level 50-99: harpoon — swordfish at Karamja (boat-routed via Port Sarim)
@@ -429,13 +431,13 @@ export const SkillProgression: Record<string, SkillStep[]> = {
     // Varrock East [3285, 3365] added as iron variety (open area, near east bank).
     MINING: [
         // Level 1-14: copper & tin at Barbarian Village mine
-        { minLevel: 1,  maxLevel: 14, action: 'mine', location: Locations.MINE_DWARVEN,      toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 175, ticksPerAction: 4, successRate: 0.65, itemGained: Items.COPPER_ORE },
-        { minLevel: 1,  maxLevel: 14, action: 'mine', location: Locations.MINE_DWARVEN,      toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 175, ticksPerAction: 4, successRate: 0.65, itemGained: Items.TIN_ORE    },
+        { minLevel: 1,  maxLevel: 14, action: 'mine', location: Locations.MINE_DWARVEN, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 175, ticksPerAction: 4, successRate: 0.65, itemGained: Items.COPPER_ORE },
+        { minLevel: 1,  maxLevel: 14, action: 'mine', location: Locations.MINE_DWARVEN, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 175, ticksPerAction: 4, successRate: 0.65, itemGained: Items.TIN_ORE    },
         // Level 15-29: iron — Barbarian Village (primary) or Varrock East (variety)
-        { minLevel: 15, maxLevel: 29, action: 'mine', location: Locations.MINE_DWARVEN,      toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 350, ticksPerAction: 5, successRate: 0.55, itemGained: Items.IRON_ORE   },
-        { minLevel: 15, maxLevel: 29, action: 'mine', location: Locations.MINE_VARROCK_EAST, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 350, ticksPerAction: 5, successRate: 0.55, itemGained: Items.IRON_ORE   },
+        { minLevel: 15, maxLevel: 29, action: 'mine', location: Locations.MINE_DWARVEN, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 350, ticksPerAction: 5, successRate: 0.55, itemGained: Items.IRON_ORE   },
+        { minLevel: 15, maxLevel: 29, action: 'mine', location: Locations.MINE_VARROCK_EAST,                                  toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 350, ticksPerAction: 5, successRate: 0.55, itemGained: Items.IRON_ORE   },
         // Level 30+: coal at Barbarian Village mine (surface accessible!)
-        { minLevel: 30, maxLevel: 99, action: 'mine', location: Locations.MINE_DWARVEN,      toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 500, ticksPerAction: 6, successRate: 0.45, itemGained: Items.COAL       },
+        { minLevel: 30, maxLevel: 99, action: 'mine', location: Locations.MINE_DWARVEN, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 500, ticksPerAction: 6, successRate: 0.45, itemGained: Items.COAL       },
     ],
 
     // ── Firemaking ───────────────────────────────────────────────────────────
@@ -481,7 +483,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         { minLevel: 3, maxLevel: 99, action: 'combat', location: Locations.COWS_LUMBRIDGE2,     toolItemIds: [], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.COW_HIDE, extra: { npcType: 'cow',       hitsToKill: 5 } },
         // ── Level 10-19: cows ─────────────────────────────────────────────────
         // ── Level 20-29: cows + barbarians ───────────────────────────────────
-        { minLevel: 20, maxLevel: 99, action: 'combat', location: Locations.BARBARIANS_VILLAGE, toolItemIds: [Items.IRON_SCIMITAR], xpPerAction: 200, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES,    extra: { npcType: 'barbarian', hitsToKill: 6 } },
+        { minLevel: 20, maxLevel: 99, action: 'combat', location: Locations.BARBARIANS_VILLAGE, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.IRON_SCIMITAR], xpPerAction: 200, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES,    extra: { npcType: 'barbarian', hitsToKill: 6 } },
         // ── Level 30-39: cows + barbarians (steel) ────────────────────────────
         // ── Level 40+: Al Kharid warriors (+ barbarian fallback) ─────────────
         { minLevel: 40, maxLevel: 99, action: 'combat', location: Locations.AL_KHARID_WARRIORS, toolItemIds: [Items.STEEL_SCIMITAR], xpPerAction: 280, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES,    extra: { npcType: 'warrior',   hitsToKill: 8 } },
@@ -497,7 +499,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         { minLevel: 3, maxLevel: 99, action: 'combat', location: Locations.COWS_LUMBRIDGE2,     toolItemIds: [Items.IRON_SCIMITAR], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.COW_HIDE, extra: { npcType: 'cow',       hitsToKill: 5 } },
         // ── Level 10-19: cows ─────────────────────────────────────────────────
         // ── Level 20-29: cows + barbarians ───────────────────────────────────
-        { minLevel: 20, maxLevel: 99, action: 'combat', location: Locations.BARBARIANS_VILLAGE, toolItemIds: [Items.IRON_SCIMITAR], xpPerAction: 200, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES,    extra: { npcType: 'barbarian', hitsToKill: 6 } },
+        { minLevel: 20, maxLevel: 99, action: 'combat', location: Locations.BARBARIANS_VILLAGE, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.IRON_SCIMITAR], xpPerAction: 200, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES,    extra: { npcType: 'barbarian', hitsToKill: 6 } },
         // ── Level 30-39: cows + barbarians (steel) ────────────────────────────
         // ── Level 40+: Al Kharid warriors (+ barbarian fallback) ─────────────
         { minLevel: 40, maxLevel: 99, action: 'combat', location: Locations.AL_KHARID_WARRIORS, toolItemIds: [Items.MITHRIL_SCIMITAR], xpPerAction: 280, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES,    extra: { npcType: 'warrior',   hitsToKill: 8 } },
@@ -513,7 +515,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         { minLevel: 3, maxLevel: 99, action: 'combat', location: Locations.COWS_LUMBRIDGE2,     toolItemIds: [Items.IRON_SCIMITAR], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.COW_HIDE, extra: { npcType: 'cow',       hitsToKill: 5 } },
         // ── Level 10-19: cows ─────────────────────────────────────────────────
         // ── Level 20-29: cows + barbarians ───────────────────────────────────
-        { minLevel: 20, maxLevel: 99, action: 'combat', location: Locations.BARBARIANS_VILLAGE, toolItemIds: [Items.IRON_SCIMITAR], xpPerAction: 200, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES,    extra: { npcType: 'barbarian', hitsToKill: 6 } },
+        { minLevel: 20, maxLevel: 99, action: 'combat', location: Locations.BARBARIANS_VILLAGE, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.IRON_SCIMITAR], xpPerAction: 200, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES,    extra: { npcType: 'barbarian', hitsToKill: 6 } },
         // ── Level 30-39: cows + barbarians (steel) ────────────────────────────
         // ── Level 40+: Al Kharid warriors (+ barbarian fallback) ─────────────
         { minLevel: 40, maxLevel: 99, action: 'combat', location: Locations.AL_KHARID_WARRIORS, toolItemIds: [Items.MITHRIL_SCIMITAR], xpPerAction: 280, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES,    extra: { npcType: 'warrior',   hitsToKill: 8 } },
