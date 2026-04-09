@@ -328,7 +328,12 @@ export function walkTo(player: Player, destX: number, destZ: number): void {
     // (e.g. fishing spot → bank, or woodcutting → bank).
     player.clearPendingAction();
 
-    player.moveSpeed = MoveSpeed.WALK;
+    // Toggle persistent run based on current energy.
+    // Enable at 30 % (3 000/10 000); disable below 30 % so energy recovers.
+    // runanim must be non-(-1) for this to take effect — set in BotAppearance.randomize.
+    player.run = player.runenergy >= 3000 ? 1 : 0;
+
+    player.moveSpeed = MoveSpeed.WALK; // guard against INSTANT; processMovement overrides via defaultMoveSpeed()
 
     if (Math.abs(player.x - destX) < 1 && Math.abs(player.z - destZ) < 1) return;
 
@@ -667,6 +672,30 @@ export function findNpcByPrefix(cx: number, cz: number, level: number, prefix: s
     });
 }
 
+/**
+ * Raw NPC search with a caller-supplied predicate.
+ * Use this when you need combined type + combat-state + exclusion-set filtering
+ * that the named helpers cannot express in a single call.
+ */
+export function findNpcFiltered(
+    cx: number, cz: number, level: number,
+    predicate: (npc: Npc) => boolean,
+    radius = 22
+): Npc | null {
+    return _findNpc(cx, cz, level, radius, predicate);
+}
+
+/**
+ * Returns true if the NPC's debug name matches the given string by exact type
+ * name first, then by prefix — the same two-step check used inside the combat
+ * target search routines.
+ */
+export function npcMatchesName(npc: Npc, name: string): boolean {
+    const typeId = NpcType.getId(name);
+    if (typeId !== -1 && npc.type === typeId) return true;
+    return !!(NpcType.get(npc.type).debugname?.startsWith(name));
+}
+
 // ── Internal zone search ──────────────────────────────────────────────────────
 
 function _findNpc(
@@ -817,6 +846,28 @@ export function hasItem(player: Player, itemId: number, count = 1): boolean {
 
 export function getCombatLevel(player: Player): number {
     return player.combatLevel;
+}
+
+/**
+ * Compute the combat level of an NPC from its stat block.
+ * Formula mirrors the RS2 visible combat level:
+ *   floor((defence + hitpoints) * 0.25 + (attack + strength) * 0.325)
+ */
+export function getNpcCombatLevel(npc: Npc): number {
+    const t = NpcType.get(npc.type);
+    const atk = t.stats[0]; // NpcStat.ATTACK
+    const def = t.stats[1]; // NpcStat.DEFENCE
+    const str = t.stats[2]; // NpcStat.STRENGTH
+    const hp  = t.stats[3]; // NpcStat.HITPOINTS
+    return Math.max(1, Math.floor((def + hp) * 0.25 + (atk + str) * 0.325));
+}
+
+/**
+ * Find any NPC within `radius` tiles that is currently targeting `player`.
+ * Used by CombatTask to detect aggressive NPCs the bot did not initiate combat with.
+ */
+export function findAggressorNpc(player: Player, radius = 10): Npc | null {
+    return _findNpc(player.x, player.z, player.level, radius, npc => (npc as any).target === player);
 }
 
 /**

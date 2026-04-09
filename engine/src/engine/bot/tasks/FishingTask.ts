@@ -14,7 +14,7 @@ import {
     openNearbyGate, botJitter, nearestBank,
 } from '#/engine/bot/tasks/BotTaskBase.js';
 import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
-import { getCombatLevel } from '#/engine/bot/BotAction.js';
+import { getCombatLevel, getNpcCombatLevel, findAggressorNpc } from '#/engine/bot/BotAction.js';
 
 /** Draynor village fishing spots — aggressive Dark Wizards patrol here, minimum combat 16. */
 const DRAYNOR_FISH_LOCATIONS: Array<[number, number, number]> = [
@@ -25,12 +25,14 @@ const DRAYNOR_FISH_LOCATIONS: Array<[number, number, number]> = [
 export class FishingTask extends BotTask {
     private step: SkillStep;
 
-    private state: 'walk' | 'approach' | 'scan' | 'interact' | 'bank_walk' | 'bank_done' = 'walk';
+    private state: 'walk' | 'approach' | 'scan' | 'interact' | 'flee' | 'bank_walk' | 'bank_done' = 'walk';
 
     private interactTicks = 0;
     private lastXp = 0;
     private scanFailTicks = 0;
     private approachTicks = 0;
+    private fleeTicks = 0;
+    private readonly FLEE_TICKS = 12;
 
     private currentSpot: Npc | null = null;
 
@@ -62,6 +64,20 @@ export class FishingTask extends BotTask {
         if (this.cooldown > 0) {
             this.cooldown--;
             return;
+        }
+
+        // ── Aggressor detection ─────────────────────────────────────────────
+        if (this.state !== 'bank_walk' && this.state !== 'bank_done' && this.state !== 'flee') {
+            const aggressor = findAggressorNpc(player, 8);
+            if (aggressor) {
+                const npcLvl = getNpcCombatLevel(aggressor);
+                if (npcLvl > player.combatLevel) {
+                    this.state = 'flee';
+                    this.fleeTicks = 0;
+                    this.currentSpot = null;
+                    return;
+                }
+            }
         }
 
         // ── Progression upgrade ─────────────────────────────────────────────
@@ -100,6 +116,7 @@ export class FishingTask extends BotTask {
 
         if (this.state === 'bank_done') {
             this._depositFish(player);
+            this._rerollStep(player); // re-randomise fishing spot for the next run
             this.state = 'walk';
             this.cooldown = 3;
             return;
@@ -107,6 +124,18 @@ export class FishingTask extends BotTask {
 
         if (isInventoryFull(player)) {
             this.state = 'bank_walk';
+            return;
+        }
+
+        // ── Flee ──────────────────────────────────────────────────────────────
+        if (this.state === 'flee') {
+            this.fleeTicks++;
+            const [lx, lz] = this.step.location;
+            this._stuckWalk(player, lx, lz);
+            if (this.fleeTicks >= this.FLEE_TICKS || isNear(player, lx, lz, 12)) {
+                this.state = 'walk';
+                this.fleeTicks = 0;
+            }
             return;
         }
 
@@ -214,9 +243,22 @@ export class FishingTask extends BotTask {
         this.scanFailTicks = 0;
         this.approachTicks = 0;
         this.lastXp = 0;
+        this.fleeTicks = 0;
         this.currentSpot = null;
         this.stuck.reset();
         this.watchdog.reset();
+    }
+
+    // ── Step re-roll ─────────────────────────────────────────────────────────
+
+    /** Pick a fresh random step matching the bot's current level and owned tools. */
+    private _rerollStep(player: Player): void {
+        const level = getBaseLevel(player, PlayerStat.FISHING);
+        const newStep = getProgressionStep(
+            'FISHING', level,
+            ids => ids.every(id => hasItem(player, id)),
+        );
+        if (newStep) this.step = newStep;
     }
 
     // ── Spot detection ───────────────────────────────────────────────────────

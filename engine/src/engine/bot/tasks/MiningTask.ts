@@ -14,16 +14,19 @@ import {
     openNearbyGate, botJitter, nearestBank,
 } from '#/engine/bot/tasks/BotTaskBase.js';
 import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
+import { getNpcCombatLevel, findAggressorNpc } from '#/engine/bot/BotAction.js';
 
 export class MiningTask extends BotTask {
     private step: SkillStep;
 
-    private state: 'walk' | 'approach' | 'scan' | 'interact' | 'bank_walk' | 'bank_done' = 'walk';
+    private state: 'walk' | 'approach' | 'scan' | 'interact' | 'flee' | 'bank_walk' | 'bank_done' = 'walk';
 
     private interactTicks = 0;
     private lastXp = 0;
     private scanFailTicks = 0;
     private approachTicks = 0;
+    private fleeTicks = 0;
+    private readonly FLEE_TICKS = 12;
 
     private currentRock: Loc | null = null;
 
@@ -48,6 +51,20 @@ export class MiningTask extends BotTask {
         if (this.cooldown > 0) {
             this.cooldown--;
             return;
+        }
+
+        // ── Aggressor detection ─────────────────────────────────────────────
+        if (this.state !== 'bank_walk' && this.state !== 'bank_done' && this.state !== 'flee') {
+            const aggressor = findAggressorNpc(player, 8);
+            if (aggressor) {
+                const npcLvl = getNpcCombatLevel(aggressor);
+                if (npcLvl > player.combatLevel) {
+                    this.state = 'flee';
+                    this.fleeTicks = 0;
+                    this.currentRock = null;
+                    return;
+                }
+            }
         }
 
         // ── Progression upgrade ─────────────────────────────────────────────
@@ -86,6 +103,7 @@ export class MiningTask extends BotTask {
 
         if (this.state === 'bank_done') {
             this._depositOre(player);
+            this._rerollStep(player); // re-randomise rock location for the next run
             this.state = 'walk';
             this.cooldown = 3;
             return;
@@ -93,6 +111,18 @@ export class MiningTask extends BotTask {
 
         if (isInventoryFull(player)) {
             this.state = 'bank_walk';
+            return;
+        }
+
+        // ── Flee ──────────────────────────────────────────────────────────────
+        if (this.state === 'flee') {
+            this.fleeTicks++;
+            const [lx, lz] = this.step.location;
+            this._stuckWalk(player, lx, lz);
+            if (this.fleeTicks >= this.FLEE_TICKS || isNear(player, lx, lz, 12)) {
+                this.state = 'walk';
+                this.fleeTicks = 0;
+            }
             return;
         }
 
@@ -189,9 +219,22 @@ export class MiningTask extends BotTask {
         this.scanFailTicks = 0;
         this.approachTicks = 0;
         this.lastXp = 0;
+        this.fleeTicks = 0;
         this.currentRock = null;
         this.stuck.reset();
         this.watchdog.reset();
+    }
+
+    // ── Step re-roll ────────────────────────────────────────────────────────
+
+    /** Pick a fresh random step matching the bot's current level and owned tools. */
+    private _rerollStep(player: Player): void {
+        const level = getBaseLevel(player, PlayerStat.MINING);
+        const newStep = getProgressionStep(
+            'MINING', level,
+            ids => ids.every(id => hasItem(player, id)),
+        );
+        if (newStep) this.step = newStep;
     }
 
     // ── Rock search ────────────────────────────────────────────────────────

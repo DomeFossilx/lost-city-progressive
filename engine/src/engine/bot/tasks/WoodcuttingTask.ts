@@ -28,7 +28,7 @@ import {
 } from '#/engine/bot/tasks/BotTaskBase.js';
 import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
 import { findNpcByPrefix } from './BotTaskBase.js';
-import { getCombatLevel } from '#/engine/bot/BotAction.js';
+import { getCombatLevel, getNpcCombatLevel, findAggressorNpc } from '#/engine/bot/BotAction.js';
 
 /** Draynor village woodcutting spots — aggressive Dark Wizards patrol here, minimum combat 16. */
 const DRAYNOR_WC_LOCATIONS: Array<[number, number, number]> = [
@@ -46,11 +46,13 @@ export class WoodcuttingTask extends BotTask {
      *   bank_walk → walking to sell logs
      *   bank_done → logs sold, return to walk
      */
-    private state: 'walk' | 'approach' | 'interact' | 'bank_walk' | 'bank_done' = 'walk';
+    private state: 'walk' | 'approach' | 'interact' | 'flee' | 'bank_walk' | 'bank_done' = 'walk';
     private interactTicks  = 0;
     private lastXp         = 0;
     private scanFailTicks  = 0;
     private approachTicks  = 0;   // ticks spent approaching a tree
+    private fleeTicks      = 0;
+    private readonly FLEE_TICKS = 12;
     private currentTree:  Loc | null = null;
     private readonly stuck    = new StuckDetector(30, 4, 2);
     private readonly watchdog = new ProgressWatchdog();
@@ -77,6 +79,20 @@ export class WoodcuttingTask extends BotTask {
         if (this.watchdog.check(player, banking)) { this.interrupt(); return; }
         if (this.cooldown > 0) { this.cooldown--; return; }
 
+        // ── Aggressor detection ───────────────────────────────────────────────
+        if (this.state !== 'bank_walk' && this.state !== 'bank_done' && this.state !== 'flee') {
+            const aggressor = findAggressorNpc(player, 8);
+            if (aggressor) {
+                const npcLvl = getNpcCombatLevel(aggressor);
+                if (npcLvl > player.combatLevel) {
+                    this.state = 'flee';
+                    this.fleeTicks = 0;
+                    this.currentTree = null;
+                    return;
+                }
+            }
+        }
+
         // Upgrade step when level-up unlocks a better tree tier
         const level   = getBaseLevel(player, PlayerStat.WOODCUTTING);
         const newStep = getProgressionStep('WOODCUTTING', level);
@@ -101,10 +117,23 @@ export class WoodcuttingTask extends BotTask {
 
         if (this.state === 'bank_done') {
             this._depositLoot(player);
+            this._rerollStep(player); // re-randomise tree location for the next run
             this.state = 'walk'; this.cooldown = 3; return;
         }
 
         if (isInventoryFull(player)) { this.state = 'bank_walk'; return; }
+
+        // ── Flee ──────────────────────────────────────────────────────────────
+        if (this.state === 'flee') {
+            this.fleeTicks++;
+            const [lx, lz] = this.step.location;
+            this._stuckWalk(player, lx, lz);
+            if (this.fleeTicks >= this.FLEE_TICKS || isNear(player, lx, lz, 12)) {
+                this.state = 'walk';
+                this.fleeTicks = 0;
+            }
+            return;
+        }
 
         // ── Walk to tree area ─────────────────────────────────────────────────
         if (this.state === 'walk') {
@@ -207,6 +236,7 @@ export class WoodcuttingTask extends BotTask {
         this.scanFailTicks = 0;
         this.approachTicks = 0;
         this.lastXp        = 0;
+        this.fleeTicks     = 0;
         this.currentTree   = null;
         this.stuck.reset();
         this.watchdog.reset();
@@ -262,6 +292,21 @@ export class WoodcuttingTask extends BotTask {
         }
     }
 
+
+    // ── Step re-roll ─────────────────────────────────────────────────────────
+
+    /** Pick a fresh random step matching the bot's current level and owned tools. */
+    private _rerollStep(player: Player): void {
+        const level = getBaseLevel(player, PlayerStat.WOODCUTTING);
+        const newStep = getProgressionStep(
+            'WOODCUTTING', level,
+            ids => ids.every(id => hasItem(player, id)),
+        );
+        if (newStep) {
+            this.step = newStep;
+            this.currentTree = null;
+        }
+    }
 
         private _depositLoot(player: Player): void {
         const inv = player.getInventory(InvType.INV);

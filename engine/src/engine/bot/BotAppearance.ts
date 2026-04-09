@@ -103,6 +103,16 @@ export class BotAppearance {
         worn.set(3, item(pick(STARTER_WEAPONS), player)); // weapon
         //^ I believe the login script already does this ^
 
+        // Set movement animations so the run-toggle in walkTo works.
+        // Without a valid runanim the engine hard-forces MoveSpeed.WALK
+        // regardless of player.run, so bots can never run.
+        player.readyanim  = 808; // human_ready
+        player.walkanim   = 819; // human_walk_f
+        player.walkanim_b = 820; // human_walk_b
+        player.walkanim_l = 821; // human_walk_l
+        player.walkanim_r = 822; // human_walk_r
+        player.runanim    = 824; // human_running
+
         player.buildAppearance(InvType.WORN);
     }
 }
