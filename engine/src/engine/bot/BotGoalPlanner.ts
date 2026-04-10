@@ -15,14 +15,14 @@
  */
 
 import Player from '#/engine/entity/Player.js';
-import { PlayerStat, getBaseLevel, hasItem, countItem } from '#/engine/bot/BotAction.js';
+import { PlayerStat, getBaseLevel, hasItem, countItem, isInventoryFull } from '#/engine/bot/BotAction.js';
 import { Items, SkillProgression, getProgressionStep } from '#/engine/bot/BotKnowledge.js';
 import {
     getMissingPurchases, canAffordStep, totalCostOfMissing,
 } from '#/engine/bot/BotNeeds.js';
 import type { Purchase } from '#/engine/bot/BotNeeds.js';
 import { bankInvId, BotTask }        from '#/engine/bot/tasks/BotTaskBase.js';
-import { InitTask, BuryBonesTask, IdleTask } from '#/engine/bot/tasks/UtilTasks.js';
+import { InitTask, BuryBonesTask, IdleTask, BankTask } from '#/engine/bot/tasks/UtilTasks.js';
 import { ShopTripTask }   from '#/engine/bot/tasks/ShopTripTask.js';
 import { WoodcuttingTask } from '#/engine/bot/tasks/WoodcuttingTask.js';
 import { MiningTask }     from '#/engine/bot/tasks/MiningTask.js';
@@ -130,6 +130,24 @@ export class BotGoalPlanner {
     // ── Internal ──────────────────────────────────────────────────────────────
 
     private _pickBestTask(player: Player): BotTask | null {
+        // ── Full inventory: bank gathered resources before anything else ──────
+        // When the inventory is full, ShopTripTask.shouldRun will refuse to run
+        // (no slot for the purchased item) and gathering tasks can't proceed
+        // either. The only way out is to bank first.
+        //
+        // We keep coins and every tool ID appearing in any progression step so
+        // the bot doesn't accidentally bank its axe/pickaxe/weapon alongside the
+        // logs/ores/fish that actually caused the overflow.
+        if (isInventoryFull(player)) {
+            const keepIds = new Set<number>([Items.COINS]);
+            for (const steps of Object.values(SkillProgression)) {
+                for (const step of steps) {
+                    for (const id of step.toolItemIds) keepIds.add(id);
+                }
+            }
+            return new BankTask([...keepIds]);
+        }
+
         // ── COOKING priority: cook whenever any fish are available ───────────
         // Without this, FISHING (weight 25) almost always beats COOKING (weight 15)
         // in the weighted shuffle, so bots accumulate fish forever and never cook.
@@ -262,6 +280,11 @@ export class BotGoalPlanner {
         const steps = SkillProgression['COOKING'].filter(
             s => level >= s.minLevel && level <= s.maxLevel
         );
+
+        // Collect ALL viable steps (correct fish type + enough quantity).
+        // Then pick randomly so bots spread across all cooking locations
+        // instead of every bot always choosing the first (Al Kharid) entry.
+        const candidates: typeof steps = [];
         for (const cs of steps) {
             const fishId = cs.itemConsumed;
             if (!fishId) continue;
@@ -277,9 +300,12 @@ export class BotGoalPlanner {
             // Also count fish currently in carried inventory (not yet banked)
             count += countItem(player, fishId);
 
-            if (count >= 10) return new CookingTask(cs);
+            if (count >= 5) candidates.push(cs);
         }
-        return null;
+
+        if (candidates.length === 0) return null;
+        // Random pick spreads bots across Al Kharid, Varrock, Falador ranges
+        return new CookingTask(candidates[Math.floor(Math.random() * candidates.length)]);
     }
 
     /**
