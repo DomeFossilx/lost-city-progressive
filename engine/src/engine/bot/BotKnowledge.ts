@@ -176,7 +176,7 @@ export const Locations = {
     // ── Woodcutting ───────────────────────────────────────────────────────────
     TREES_LUMBRIDGE: [3194, 3226, 0] as [number, number, number], // ✅ behind Lumbridge castle
     TREES_DRAYNOR: [3091, 3271, 0] as [number, number, number], // ✅ normal trees near Draynor
-    OAKS_DRAYNOR: [3088, 3236, 0] as [number, number, number], // ✅ oaks south of Draynor bank
+    OAKS_VARROCK: [3166, 3417, 0] as [number, number, number], // ✅ oaks south of Draynor bank
     WILLOWS_DRAYNOR: [3180, 3270, 0] as [number, number, number], // ✅ willows east of Draynor
     WILLOWS_BARBARIAN: [3048, 3422, 0] as [number, number, number], // ✅ willows along River Lum — gate-free
     WILLOWS_BARBARIAN_VIA: [3045, 3340, 0] as [number, number, number], // ↗ waypoint west of Draynor Mansion (3110,3329)
@@ -394,7 +394,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
     WOODCUTTING: [
         { minLevel: 1, maxLevel: 14, action: 'woodcut', location: Locations.TREES_LUMBRIDGE, toolItemIds: [Items.BRONZE_AXE], xpPerAction: 250, ticksPerAction: 5, successRate: 0.65, itemGained: Items.LOGS },
         { minLevel: 1, maxLevel: 14, action: 'woodcut', location: Locations.TREES_DRAYNOR, toolItemIds: [Items.BRONZE_AXE], xpPerAction: 250, ticksPerAction: 5, successRate: 0.65, itemGained: Items.LOGS },
-        { minLevel: 15, maxLevel: 29, action: 'woodcut', location: Locations.OAKS_DRAYNOR, toolItemIds: [Items.IRON_AXE], xpPerAction: 375, ticksPerAction: 5, successRate: 0.6, itemGained: Items.OAK_LOGS },
+        { minLevel: 15, maxLevel: 29, action: 'woodcut', location: Locations.OAKS_VARROCK, toolItemIds: [Items.IRON_AXE], xpPerAction: 375, ticksPerAction: 5, successRate: 0.6, itemGained: Items.OAK_LOGS },
         { minLevel: 30, maxLevel: 59, action: 'woodcut', location: Locations.WILLOWS_DRAYNOR, toolItemIds: [Items.STEEL_AXE], xpPerAction: 675, ticksPerAction: 4, successRate: 0.65, itemGained: Items.WILLOW_LOGS },
         {
             minLevel: 30,
