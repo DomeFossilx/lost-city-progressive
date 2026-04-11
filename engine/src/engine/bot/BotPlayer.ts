@@ -11,6 +11,7 @@ import InvType from '#/cache/config/InvType.js';
 import { BotTask } from '#/engine/bot/tasks/Index.js';
 import { BotGoalPlanner } from '#/engine/bot/BotGoalPlanner.js';
 import { getBaseLevel, PlayerStat } from '#/engine/bot/BotAction.js';
+import { PlayerStatNameMap } from '#/engine/entity/PlayerStat.js';
 
 const RESCAN_TICKS = 600;
 
@@ -18,40 +19,44 @@ const NO_INTERRUPT_TASKS = new Set(['ShopTrip', 'Bank', 'Walk', 'Init', 'Idle', 
 
 // ── Phrase lists loaded from data/bot/bot_phrases.json ───────────────────────
 // Falls back to a minimal built-in list if the file is missing.
-let IDLE_PHRASES:    string[] = ['nice', 'gz', 'good spot', 'banking brb', 'almost there', 'good xp here', 'gg', 'brb'];
+let IDLE_PHRASES: string[] = ['nice', 'gz', 'good spot', 'banking brb', 'almost there', 'good xp here', 'gg', 'brb'];
 let LEVELUP_PHRASES: string[] = ['gz me', 'finally!', 'level up!', 'yes!', 'grind never stops', 'getting there'];
 
 try {
     const raw = fs.readFileSync(path.join('data', 'bot', 'bot_phrases.json'), 'utf8');
     const data = JSON.parse(raw) as { idle?: string[]; levelup?: string[] };
-    if (Array.isArray(data.idle)    && data.idle.length    > 0) IDLE_PHRASES    = data.idle;
+    if (Array.isArray(data.idle) && data.idle.length > 0) IDLE_PHRASES = data.idle;
     if (Array.isArray(data.levelup) && data.levelup.length > 0) LEVELUP_PHRASES = data.levelup;
 } catch {
     // File not found or malformed — keep the built-in defaults silently.
 }
 
-function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
-function chance(p: number): boolean { return Math.random() < p; }
+function pick<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+function chance(p: number): boolean {
+    return Math.random() < p;
+}
 
 export class BotPlayer {
-    readonly player:  Player;
+    readonly player: Player;
     readonly planner: BotGoalPlanner;
-    readonly name:    string;
+    readonly name: string;
 
-    currentTask:  BotTask | null = null;
-    taskHistory:  string[]       = [];
+    currentTask: BotTask | null = null;
+    taskHistory: string[] = [];
 
-    private ticksAlive   = 0;
-    private rescanTimer  = 0;
+    private ticksAlive = 0;
+    private rescanTimer = 0;
     private planFailCount = 0;
 
     // ✅ NEW: sub-task system (for bury bones, eating, etc.)
     private subTask: BotTask | null = null;
 
     constructor(player: Player, planner: BotGoalPlanner) {
-        this.player  = player;
+        this.player = player;
         this.planner = planner;
-        this.name    = player.username;
+        this.name = player.username;
 
         // ✅ link player → bot (so tasks can access this)
         (player as any)._bot = this;
@@ -78,10 +83,7 @@ export class BotPlayer {
 
         // ── SUB TASK (HIGH PRIORITY) ─────────────────────────────
         if (this.subTask) {
-            if (
-                this.subTask.isComplete(this.player) ||
-                !this.subTask.shouldRun(this.player)
-            ) {
+            if (this.subTask.isComplete(this.player) || !this.subTask.shouldRun(this.player)) {
                 this.subTask = null;
             } else {
                 try {
@@ -137,7 +139,7 @@ export class BotPlayer {
 
             if (this.planFailCount >= 5) {
                 this.planFailCount = 0;
-                this.rescanTimer   = RESCAN_TICKS;
+                this.rescanTimer = RESCAN_TICKS;
             }
 
             this.currentTask = this._pickTask();
@@ -156,7 +158,7 @@ export class BotPlayer {
     }
 
     onLevelUp(stat: PlayerStat, newLevel: number): void {
-        const statName = PlayerStat[stat] ?? `stat${stat}`;
+        const statName = PlayerStatNameMap.get(stat) ?? `stat${stat}`;
         this.log(`LEVEL UP: ${statName} → ${newLevel}`);
 
         if (chance(0.6)) {
@@ -170,20 +172,20 @@ export class BotPlayer {
         const p = this.player;
 
         return {
-            name:        this.name,
-            x:           p.x,
-            z:           p.z,
-            level:       p.level,
-            task:        this.currentTask?.name ?? 'idle',
-            wc:          getBaseLevel(p, PlayerStat.WOODCUTTING),
-            fishing:     getBaseLevel(p, PlayerStat.FISHING),
-            mining:      getBaseLevel(p, PlayerStat.MINING),
-            attack:      getBaseLevel(p, PlayerStat.ATTACK),
-            strength:    getBaseLevel(p, PlayerStat.STRENGTH),
-            defence:     getBaseLevel(p, PlayerStat.DEFENCE),
-            hitpoints:   getBaseLevel(p, PlayerStat.HITPOINTS),
-            prayer:      getBaseLevel(p, PlayerStat.PRAYER),
-            ticksAlive:  this.ticksAlive,
+            name: this.name,
+            x: p.x,
+            z: p.z,
+            level: p.level,
+            task: this.currentTask?.name ?? 'idle',
+            wc: getBaseLevel(p, PlayerStat.WOODCUTTING),
+            fishing: getBaseLevel(p, PlayerStat.FISHING),
+            mining: getBaseLevel(p, PlayerStat.MINING),
+            attack: getBaseLevel(p, PlayerStat.ATTACK),
+            strength: getBaseLevel(p, PlayerStat.STRENGTH),
+            defence: getBaseLevel(p, PlayerStat.DEFENCE),
+            hitpoints: getBaseLevel(p, PlayerStat.HITPOINTS),
+            prayer: getBaseLevel(p, PlayerStat.PRAYER),
+            ticksAlive: this.ticksAlive
         };
     }
 

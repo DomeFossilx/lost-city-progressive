@@ -875,7 +875,7 @@ export function pickupGroundItem(player: Player, obj: Obj): boolean {
     const added = inv.add(obj.type, obj.count);
     if (!added.hasSucceeded()) return false;
 
-    getWorld().removeObj(obj);
+    getWorld().removeObj(obj, -1);
     return true;
 }
 

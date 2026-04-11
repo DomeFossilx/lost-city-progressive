@@ -17,24 +17,23 @@
 import Player from '#/engine/entity/Player.js';
 import { PlayerStat, getBaseLevel, hasItem, countItem, isInventoryFull } from '#/engine/bot/BotAction.js';
 import { Items, SkillProgression, getProgressionStep } from '#/engine/bot/BotKnowledge.js';
-import {
-    getMissingPurchases, canAffordStep, totalCostOfMissing,
-} from '#/engine/bot/BotNeeds.js';
+import { getMissingPurchases, canAffordStep, totalCostOfMissing } from '#/engine/bot/BotNeeds.js';
 import type { Purchase } from '#/engine/bot/BotNeeds.js';
-import { bankInvId, BotTask }        from '#/engine/bot/tasks/BotTaskBase.js';
+import { bankInvId, BotTask } from '#/engine/bot/tasks/BotTaskBase.js';
 import { InitTask, BuryBonesTask, IdleTask, BankTask } from '#/engine/bot/tasks/UtilTasks.js';
-import { ShopTripTask }   from '#/engine/bot/tasks/ShopTripTask.js';
+import { ShopTripTask } from '#/engine/bot/tasks/ShopTripTask.js';
 import { WoodcuttingTask } from '#/engine/bot/tasks/WoodcuttingTask.js';
-import { MiningTask }     from '#/engine/bot/tasks/MiningTask.js';
-import { FishingTask }    from '#/engine/bot/tasks/FishingTask.js';
-import { CombatTask }     from '#/engine/bot/tasks/CombatTask.js';
+import { MiningTask } from '#/engine/bot/tasks/MiningTask.js';
+import { FishingTask } from '#/engine/bot/tasks/FishingTask.js';
+import { CombatTask } from '#/engine/bot/tasks/CombatTask.js';
 import { FiremakingTask } from '#/engine/bot/tasks/FiremakingTask.js';
-import { CookingTask }   from '#/engine/bot/tasks/CookingTask.js';
+import { CookingTask } from '#/engine/bot/tasks/CookingTask.js';
+import { SmithingTask } from '#/engine/bot/tasks/SmithingTask.js';
 
 // ── Personality ───────────────────────────────────────────────────────────────
 
 export interface BotPersonality {
-    name:    string;
+    name: string;
     weights: Partial<Record<string, number>>;
 }
 
@@ -42,48 +41,65 @@ export const Personalities: Record<string, BotPersonality> = {
     SKILLER: {
         name: 'Skiller',
         weights: {
-            WOODCUTTING: 25, FISHING: 25, MINING: 20,
-            COOKING: 15, SMITHING: 10, PRAYER: 5, FIREMAKING: 25,
-        },
+            WOODCUTTING: 15,
+            FISHING: 20,
+            MINING: 15,
+            COOKING: 15,
+            SMITHING: 15,
+            PRAYER: 10,
+            FIREMAKING: 10
+        }
     },
     FIGHTER: {
         name: 'Fighter',
         weights: {
-            ATTACK: 30, STRENGTH: 30, DEFENCE: 20,
-            RANGED: 10, MAGIC: 5, PRAYER: 5,
-        },
+            ATTACK: 30,
+            STRENGTH: 30,
+            DEFENCE: 20,
+            RANGED: 10,
+            MAGIC: 5,
+            PRAYER: 5
+        }
     },
     BALANCED: {
         name: 'Balanced',
         weights: {
-            ATTACK: 10, STRENGTH: 10, DEFENCE: 8,
-            WOODCUTTING: 12, FISHING: 10, MINING: 8,
-            COOKING: 8, SMITHING: 5, PRAYER: 5,
-            RANGED: 4, MAGIC: 4, FIREMAKING: 25,
-        },
-    },
+            ATTACK: 10,
+            STRENGTH: 10,
+            DEFENCE: 8,
+            WOODCUTTING: 12,
+            FISHING: 10,
+            MINING: 8,
+            COOKING: 8,
+            SMITHING: 5,
+            PRAYER: 5,
+            RANGED: 4,
+            MAGIC: 4,
+            FIREMAKING: 25
+        }
+    }
 };
 
 // Skill name → PlayerStat
 const SKILL_STAT: Record<string, PlayerStat> = {
-    ATTACK:      PlayerStat.ATTACK,
-    STRENGTH:    PlayerStat.STRENGTH,
-    DEFENCE:     PlayerStat.DEFENCE,
-    HITPOINTS:   PlayerStat.HITPOINTS,
-    RANGED:      PlayerStat.RANGED,
-    PRAYER:      PlayerStat.PRAYER,
-    MAGIC:       PlayerStat.MAGIC,
-    COOKING:     PlayerStat.COOKING,
+    ATTACK: PlayerStat.ATTACK,
+    STRENGTH: PlayerStat.STRENGTH,
+    DEFENCE: PlayerStat.DEFENCE,
+    HITPOINTS: PlayerStat.HITPOINTS,
+    RANGED: PlayerStat.RANGED,
+    PRAYER: PlayerStat.PRAYER,
+    MAGIC: PlayerStat.MAGIC,
+    COOKING: PlayerStat.COOKING,
     WOODCUTTING: PlayerStat.WOODCUTTING,
-    FLETCHING:   PlayerStat.FLETCHING,
-    FISHING:     PlayerStat.FISHING,
-    FIREMAKING:  PlayerStat.FIREMAKING,
-    CRAFTING:    PlayerStat.CRAFTING,
-    SMITHING:    PlayerStat.SMITHING,
-    MINING:      PlayerStat.MINING,
-    AGILITY:     PlayerStat.AGILITY,
-    THIEVING:    PlayerStat.THIEVING,
-    RUNECRAFT:   PlayerStat.RUNECRAFT,
+    FLETCHING: PlayerStat.FLETCHING,
+    FISHING: PlayerStat.FISHING,
+    FIREMAKING: PlayerStat.FIREMAKING,
+    CRAFTING: PlayerStat.CRAFTING,
+    SMITHING: PlayerStat.SMITHING,
+    MINING: PlayerStat.MINING,
+    AGILITY: PlayerStat.AGILITY,
+    THIEVING: PlayerStat.THIEVING,
+    RUNECRAFT: PlayerStat.RUNECRAFT
 };
 
 // Only skills with content implemented in BotKnowledge.ts
@@ -109,7 +125,6 @@ export class BotGoalPlanner {
     }
 
     pickTask(player: Player): BotTask | null {
-
         // ── 1. Init ───────────────────────────────────────────────────────────
         if (!this.initialised) {
             this.initialised = true;
@@ -158,12 +173,21 @@ export class BotGoalPlanner {
             if (cookTask) return cookTask;
         }
 
+        // ── SMITHING priority: smith whenever any ores/bars are available ────
+        // Similar priority to cooking — smith whenever materials are available.
+        // This ensures smelting takes priority over other skills when bot has ores/bars.
+        if ((this.personality.weights['SMITHING'] ?? 0) > 0) {
+            const smithTask = this._findSmithingTask(player);
+            if (smithTask) return smithTask;
+            console.log(`[Planner] ${player.username} SMITHING skipped: no smithTask (ores/bars?)`);
+        }
+
         // Build candidate list ordered by weight (highest first after shuffle)
         const candidates = this._buildCandidates(player);
         if (candidates.length === 0) return new IdleTask(30);
 
         for (const skillName of candidates) {
-            const stat  = SKILL_STAT[skillName];
+            const stat = SKILL_STAT[skillName];
             const level = getBaseLevel(player, stat);
 
             // ── COOKING: scan all matching steps for one whose fish is in bank ─
@@ -177,7 +201,7 @@ export class BotGoalPlanner {
                 continue; // no matching fish found — try next skill
             }
 
-            const step  = getProgressionStep(skillName, level);
+            const step = getProgressionStep(skillName, level);
             if (!step) continue;
 
             const missing = getMissingPurchases(player, step);
@@ -190,77 +214,74 @@ export class BotGoalPlanner {
                 // Check consumable availability (bait, feathers, raw fish for cooking, logs for FM)
                 // If the step consumes an item that isn't purchasable (e.g. raw fish, logs),
                 // the bot must first produce it via a different skill step.
-            if (step.itemConsumed && step.itemConsumed !== -1) {
+                if (step.itemConsumed && step.itemConsumed !== -1) {
+                    const hasInv = hasItem(player, step.itemConsumed, 1);
 
-                const hasInv = hasItem(player, step.itemConsumed, 1);
+                    // Check bank for consumable (count for cooking minimum-batch check)
+                    const bid = bankInvId();
+                    let bankConsumeCount = 0;
 
-                // Check bank for consumable (count for cooking minimum-batch check)
-                const bid = bankInvId();
-                let bankConsumeCount = 0;
-
-                if (bid !== -1) {
-                    const bank = player.getInventory(bid);
-                    if (bank) {
-                        for (let i = 0; i < bank.capacity; i++) {
-                            const item = bank.get(i);
-                            if (!item) continue;
-                            if (item.id === step.itemConsumed) bankConsumeCount += item.count;
-                        }
-                    }
-                }
-
-                const hasBank = bankConsumeCount > 0;
-                if (!hasInv && !hasBank) {
-                    // 🔥 fallback to woodcutting ONLY if no logs anywhere
-                    if (skillName === 'FIREMAKING') {
-                        const wcLevel = getBaseLevel(player, PlayerStat.WOODCUTTING);
-                        const wcStep = getProgressionStep('WOODCUTTING', wcLevel);
-
-                        if (wcStep) {
-                            return new WoodcuttingTask(wcStep);
-                        }
-                    }
-
-                    continue;
-                }
-
-
-                                const alsoConsumes = step.extra?.alsoConsumes as number | undefined;
-                                if (alsoConsumes && !hasItem(player, alsoConsumes, 1)) {
-                                    continue;
-                                }
+                    if (bid !== -1) {
+                        const bank = player.getInventory(bid);
+                        if (bank) {
+                            for (let i = 0; i < bank.capacity; i++) {
+                                const item = bank.get(i);
+                                if (!item) continue;
+                                if (item.id === step.itemConsumed) bankConsumeCount += item.count;
                             }
-                            // Has everything — go do the skill
-                            if (step.action === 'combat')    return new CombatTask(step, stat);
-                            if (step.action === 'woodcut')   return new WoodcuttingTask(step);
-                            if (step.action === 'mine')      return new MiningTask(step);
-                            if (step.action === 'fish')      return new FishingTask(step);
-                            if (step.action === 'firemaking') return new FiremakingTask(step);
-
-                            // Other skills (smith, etc.) not yet implemented
-                            continue;
                         }
-
-                        if (canAffordStep(player, step)) {
-                            // Only go to nearby shops — distant shops cause bots to get stuck.
-                            // Starter gear is provided by InitTask so basics are always available.
-                            const first = missing[0];
-                            if (NEARBY_SHOPS.has(first.shopKey)) {
-                                return new ShopTripTask(first.shopKey, first.itemId, first.quantity, first.cost);
-                            }
-                            // Distant shop needed — skip this skill for now
-                        }
-
-                        // Can't afford this skill's tools — try the next candidate
-                        // (lower-weight skills may be cheaper or tool-free)
                     }
 
-                    // All skills need tools the bot can't afford.
-                    // Fall back to combat to earn coins — chickens/goblins need only a sword (32gp)
-                    // If even that's too expensive, idle briefly and hope for drops
-                    const combatFallback = this._cheapestCombatTask(player);
-                    return combatFallback ?? new IdleTask(30);
+                    const hasBank = bankConsumeCount > 0;
+                    if (!hasInv && !hasBank) {
+                        // 🔥 fallback to woodcutting ONLY if no logs anywhere
+                        if (skillName === 'FIREMAKING') {
+                            const wcLevel = getBaseLevel(player, PlayerStat.WOODCUTTING);
+                            const wcStep = getProgressionStep('WOODCUTTING', wcLevel);
+
+                            if (wcStep) {
+                                return new WoodcuttingTask(wcStep);
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    const alsoConsumes = step.extra?.alsoConsumes as number | undefined;
+                    if (alsoConsumes && !hasItem(player, alsoConsumes, 1)) {
+                        continue;
+                    }
                 }
+                // Has everything — go do the skill
+                if (step.action === 'combat') return new CombatTask(step, stat);
+                if (step.action === 'woodcut') return new WoodcuttingTask(step);
+                if (step.action === 'mine') return new MiningTask(step);
+                if (step.action === 'fish') return new FishingTask(step);
+                if (step.action === 'firemaking') return new FiremakingTask(step);
+                if (step.action === 'smelt' || step.action === 'smith') return new SmithingTask(step);
+                continue;
+            }
+
+            if (canAffordStep(player, step)) {
+                // Only go to nearby shops — distant shops cause bots to get stuck.
+                // Starter gear is provided by InitTask so basics are always available.
+                const first = missing[0];
+                if (NEARBY_SHOPS.has(first.shopKey)) {
+                    return new ShopTripTask(first.shopKey, first.itemId, first.quantity, first.cost);
+                }
+                // Distant shop needed — skip this skill for now
+            }
+
+            // Can't afford this skill's tools — try the next candidate
+            // (lower-weight skills may be cheaper or tool-free)
+        }
+
+        // All skills need tools the bot can't afford.
+        // Fall back to combat to earn coins — chickens/goblins need only a sword (32gp)
+        // If even that's too expensive, idle briefly and hope for drops
+        const combatFallback = this._cheapestCombatTask(player);
+        return combatFallback ?? new IdleTask(30);
+    }
 
     /**
      * If the bot has any cookable fish (in bank OR carried inventory) for their
@@ -274,12 +295,10 @@ export class BotGoalPlanner {
      * as the bot has caught anything.
      */
     private _findCookingTask(player: Player): CookingTask | null {
-        const bid  = bankInvId();
+        const bid = bankInvId();
         const bank = bid !== -1 ? player.getInventory(bid) : null;
         const level = getBaseLevel(player, PlayerStat.COOKING);
-        const steps = SkillProgression['COOKING'].filter(
-            s => level >= s.minLevel && level <= s.maxLevel
-        );
+        const steps = SkillProgression['COOKING'].filter(s => level >= s.minLevel && level <= s.maxLevel);
 
         // Collect ALL viable steps (correct fish type + enough quantity).
         // Then pick randomly so bots spread across all cooking locations
@@ -309,39 +328,93 @@ export class BotGoalPlanner {
     }
 
     /**
+     * If the bot has any ores (in bank OR carried inventory) OR bars for their
+     * current smithing level, return a SmithingTask.  Otherwise null.
+     *
+     * Anvil mode (smith action) requires level >= 18 and bars in inventory.
+     * Furnace mode (smelt action) requires ores in inventory.
+     */
+    private _findSmithingTask(player: Player): SmithingTask | null {
+        const bid = bankInvId();
+        const bank = bid !== -1 ? player.getInventory(bid) : null;
+        const level = getBaseLevel(player, PlayerStat.SMITHING);
+        const steps = SkillProgression['SMITHING'].filter(s => level >= s.minLevel && level <= s.maxLevel);
+
+        const candidates: typeof steps = [];
+        for (const ss of steps) {
+            const consumedId = ss.itemConsumed;
+            if (!consumedId) continue;
+
+            // Count item in bank
+            let count = 0;
+            if (bank) {
+                for (let i = 0; i < bank.capacity; i++) {
+                    const it = bank.get(i);
+                    if (it?.id === consumedId) count += it.count;
+                }
+            }
+            // Also count in carried inventory
+            count += countItem(player, consumedId);
+
+            // For bronze bars, also need tin ore
+            if (ss.extra?.alsoConsumes) {
+                const alsoConsumesId = ss.extra.alsoConsumes as number;
+                let tinCount = 0;
+                if (bank) {
+                    for (let i = 0; i < bank.capacity; i++) {
+                        const it = bank.get(i);
+                        if (it?.id === alsoConsumesId) tinCount += it.count;
+                    }
+                }
+                tinCount += countItem(player, alsoConsumesId);
+                if (tinCount < 1) continue; // need tin too for bronze
+            }
+
+            if (count >= 5) candidates.push(ss);
+        }
+
+        if (candidates.length === 0) return null;
+        return new SmithingTask(candidates[Math.floor(Math.random() * candidates.length)]);
+    }
+
+    /**
      * Returns skill names in weighted-random order.
      * Skills the bot can't afford (and has no free fallback) sink to the bottom.
      */
     private _buildCandidates(player: Player): string[] {
-        const affordable:   string[] = [];
+        const affordable: string[] = [];
         const unaffordable: string[] = [];
 
-        const entries = Object.entries(this.personality.weights)
-            .filter(([skill, w]) =>
-                w && w > 0 &&
+        const entries = Object.entries(this.personality.weights).filter(
+            ([skill, w]) =>
+                w &&
+                w > 0 &&
                 SKILLS_WITH_CONTENT.has(skill) &&
                 (() => {
                     const stat = SKILL_STAT[skill];
                     return stat !== undefined && getBaseLevel(player, stat) < 99;
                 })()
-            );
+        );
 
         // Weighted shuffle into two buckets
         let remaining = entries.slice();
         while (remaining.length > 0) {
             const total = remaining.reduce((s, [, w]) => s + (w ?? 0), 0);
-            let roll    = Math.random() * total;
-            let chosen  = remaining[remaining.length - 1];
+            let roll = Math.random() * total;
+            let chosen = remaining[remaining.length - 1];
             for (const entry of remaining) {
                 roll -= entry[1] ?? 0;
-                if (roll <= 0) { chosen = entry; break; }
+                if (roll <= 0) {
+                    chosen = entry;
+                    break;
+                }
             }
             remaining = remaining.filter(e => e !== chosen);
 
             const [skill] = chosen;
-            const stat     = SKILL_STAT[skill];
-            const level    = stat !== undefined ? getBaseLevel(player, stat) : 0;
-            const step     = getProgressionStep(skill, level);
+            const stat = SKILL_STAT[skill];
+            const level = stat !== undefined ? getBaseLevel(player, stat) : 0;
+            const step = getProgressionStep(skill, level);
             if (!step) continue;
 
             if (canAffordStep(player, step)) {
@@ -365,7 +438,7 @@ export class BotGoalPlanner {
             const stat = SKILL_STAT[skillName];
             if (!stat) continue;
             const level = getBaseLevel(player, stat);
-            const step  = getProgressionStep(skillName, level);
+            const step = getProgressionStep(skillName, level);
             if (!step) continue;
 
             const missing = getMissingPurchases(player, step);
@@ -399,22 +472,21 @@ export class BotGoalPlanner {
      * to better equipment via shop trips.
      */
     private _starterItems(): number[] {
-        return [
-            Items.BRONZE_AXE,
-            Items.BRONZE_SWORD,
-            Items.IRON_SCIMITAR,
-            Items.BRONZE_PICKAXE,
-            Items.SMALL_FISHING_NET,
-            Items.TINDERBOX,
-        ];
+        return [Items.BRONZE_AXE, Items.BRONZE_SWORD, Items.IRON_SCIMITAR, Items.BRONZE_PICKAXE, Items.SMALL_FISHING_NET, Items.TINDERBOX, Items.HAMMER];
     }
 }
 
 // ── Factories ─────────────────────────────────────────────────────────────────
 
-export function makeSkiller():  BotGoalPlanner { return new BotGoalPlanner(Personalities.SKILLER);  }
-export function makeFighter():  BotGoalPlanner { return new BotGoalPlanner(Personalities.FIGHTER);  }
-export function makeBalanced(): BotGoalPlanner { return new BotGoalPlanner(Personalities.BALANCED); }
+export function makeSkiller(): BotGoalPlanner {
+    return new BotGoalPlanner(Personalities.SKILLER);
+}
+export function makeFighter(): BotGoalPlanner {
+    return new BotGoalPlanner(Personalities.FIGHTER);
+}
+export function makeBalanced(): BotGoalPlanner {
+    return new BotGoalPlanner(Personalities.BALANCED);
+}
 
 export function makeRandom(): BotGoalPlanner {
     const allSkills = Object.keys(SKILL_STAT).filter(s => SKILLS_WITH_CONTENT.has(s));
