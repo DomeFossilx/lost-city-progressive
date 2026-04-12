@@ -72,6 +72,8 @@ export const Items = {
     BONES: 526,
     BIG_BONES: 532,
     COW_HIDE: 1739, // internal name: cow_hide
+    RAW_CHICKEN: 2138,
+    RAW_BEEF: 2312,
 
     // ── Goblin / early combat drops ──────────────────────────────────────────
     GOBLIN_MAIL: 288,
@@ -217,7 +219,13 @@ export const Locations = {
     AL_KHARID_FURNACE: [3192, 3162, 0] as [number, number, number], // ⛩ inside Al Kharid
     FALADOR_FURNACE: [2975, 3369, 0] as [number, number, number], // ✅ near Falador east bank
     VARROCK_ANVIL: [3188, 3422, 0] as [number, number, number], // ✅
-    LUMBRIDGE_ALTAR: [3243, 3210, 0] as [number, number, number] // ✅
+    LUMBRIDGE_ALTAR: [3243, 3210, 0] as [number, number, number], // ✅
+
+    // Thieving - NPC pickpocket targets
+    THIEVE_LUMBRIDGE_MAN: [3192, 3248, 0] as [number, number, number], // ✅ Lumbridge man
+    THIEVE_LUMBRIDGE_WOMAN: [3194, 3250, 0] as [number, number, number], // ✅ Lumbridge woman
+    THIEVE_VARROCK_MAN: [3212, 3435, 0] as [number, number, number], // ✅ Varrock man
+    THIEVE_VARROCK_WOMAN: [3214, 3437, 0] as [number, number, number] // ✅ Varrock woman
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -320,6 +328,13 @@ export interface ToolRequirement {
     shopKey: string;
 }
 
+export const Interfaces = {
+    SHOP_SIDE: 3822,
+    SHOP_SIDE_INV: 3823,
+    SHOP: 3824,
+    SHOP_INV: 3900
+} as const;
+
 // Axes — level requirements from axes.obj param=levelrequire
 export const AxesByLevel: ToolRequirement[] = [
     { itemId: Items.BRONZE_AXE, levelReq: 1, shopKey: 'BOB_AXES' },
@@ -383,7 +398,9 @@ export interface SkillStep {
     successRate: number;
     itemGained?: number;
     itemConsumed?: number;
-    extra?: Record<string, unknown>;
+    extra?: Record<string, unknown> & {
+        itemsGained?: string[]; // item names for finding ground objects; // multiple items from a single action (e.g., chicken drops bones + feather + raw chicken)
+    };
 }
 
 export const SkillProgression: Record<string, SkillStep[]> = {
@@ -561,8 +578,30 @@ export const SkillProgression: Record<string, SkillStep[]> = {
     // picks randomly, shouldRun() filters to whatever weapon the bot currently has.
     ATTACK: [
         // ── Level 1-9: chickens + goblins ────────────────────────────────────
-        { minLevel: 1, maxLevel: 99, action: 'combat', location: Locations.CHICKENS_LUMBRIDGE, toolItemIds: [], xpPerAction: 120, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES, extra: { npcType: 'chicken', hitsToKill: 2 } },
-        { minLevel: 1, maxLevel: 99, action: 'combat', location: Locations.CHICKENS_LUMBRIDGE2, toolItemIds: [], xpPerAction: 120, ticksPerAction: 4, successRate: 1.0, itemGained: Items.BONES, extra: { npcType: 'chicken', hitsToKill: 2 } },
+        {
+            minLevel: 1,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.CHICKENS_LUMBRIDGE,
+            toolItemIds: [],
+            xpPerAction: 120,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'chicken', hitsToKill: 2, itemsGained: ['bones', 'feather', 'raw_chicken'] }
+        },
+        {
+            minLevel: 1,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.CHICKENS_LUMBRIDGE2,
+            toolItemIds: [],
+            xpPerAction: 120,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'chicken', hitsToKill: 2, itemsGained: ['bones', 'feather', 'raw_chicken'] }
+        },
         {
             minLevel: 1,
             maxLevel: 99,
@@ -575,8 +614,30 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             itemGained: Items.BONES,
             extra: { npcTypes: ['goblin', 'giant spider', 'man'], hitsToKill: 3 }
         },
-        { minLevel: 3, maxLevel: 99, action: 'combat', location: Locations.COWS_LUMBRIDGE, toolItemIds: [], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.COW_HIDE, extra: { npcType: 'cow', hitsToKill: 5 } },
-        { minLevel: 3, maxLevel: 99, action: 'combat', location: Locations.COWS_LUMBRIDGE2, toolItemIds: [], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.COW_HIDE, extra: { npcType: 'cow', hitsToKill: 5 } },
+        {
+            minLevel: 3,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.COWS_LUMBRIDGE,
+            toolItemIds: [],
+            xpPerAction: 160,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.COW_HIDE,
+            extra: { npcType: 'cow', hitsToKill: 5, itemsGained: ['bones', 'cow_hide', 'raw_beef'] }
+        },
+        {
+            minLevel: 3,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.COWS_LUMBRIDGE2,
+            toolItemIds: [],
+            xpPerAction: 160,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.COW_HIDE,
+            extra: { npcType: 'cow', hitsToKill: 5, itemsGained: ['bones', 'cow_hide', 'raw_beef'] }
+        },
         // ── Level 10-19: cows ─────────────────────────────────────────────────
         // ── Level 20-29: cows + barbarians ───────────────────────────────────
         {
@@ -958,9 +1019,22 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         }
     ],
 
+    // ── Thieving ─────────────────────────────────────────────────────────────
+    // XP from npc (pickpocket success), levels from 2004 wiki
+    // Pickpocket man/woman in Lumbridge/Varrock until 99
+    THIEVING: [
+        // Level 1-9: Lumbridge man
+        { minLevel: 1, maxLevel: 9, action: 'thieve', location: Locations.THIEVE_LUMBRIDGE_MAN, toolItemIds: [], xpPerAction: 200, ticksPerAction: 4, successRate: 0.85, itemGained: Items.COINS, extra: { npcName: 'man' } },
+        // Level 10-24: Varrock man (more profitable)
+        { minLevel: 10, maxLevel: 24, action: 'thieve', location: Locations.THIEVE_VARROCK_MAN, toolItemIds: [], xpPerAction: 350, ticksPerAction: 4, successRate: 0.8, itemGained: Items.COINS, extra: { npcName: 'man' } },
+        // Level 25-49: Lumbridge woman (higher success rate)
+        { minLevel: 25, maxLevel: 49, action: 'thieve', location: Locations.THIEVE_LUMBRIDGE_WOMAN, toolItemIds: [], xpPerAction: 450, ticksPerAction: 4, successRate: 0.9, itemGained: Items.COINS, extra: { npcName: 'woman' } },
+        // Level 50-99: Varrock woman (best silver/tokens)
+        { minLevel: 50, maxLevel: 99, action: 'thieve', location: Locations.THIEVE_VARROCK_WOMAN, toolItemIds: [], xpPerAction: 700, ticksPerAction: 4, successRate: 0.88, itemGained: Items.COINS, extra: { npcName: 'woman' } }
+    ],
+
     // ── Stubs ─────────────────────────────────────────────────────────────────
     FLETCHING: [], // requires stringing bows — complex multi-step
-    THIEVING: [], // requires NPC pickpocket interaction
     AGILITY: [], // requires course loc sequences
     RUNECRAFT: [] // requires talisman + altar interaction
 };

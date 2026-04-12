@@ -29,6 +29,7 @@ import { CombatTask } from '#/engine/bot/tasks/CombatTask.js';
 import { FiremakingTask } from '#/engine/bot/tasks/FiremakingTask.js';
 import { CookingTask } from '#/engine/bot/tasks/CookingTask.js';
 import { SmithingTask } from '#/engine/bot/tasks/SmithingTask.js';
+import { ThievingTask } from '#/engine/bot/tasks/ThievingTask.js';
 
 // ── Personality ───────────────────────────────────────────────────────────────
 
@@ -46,6 +47,7 @@ export const Personalities: Record<string, BotPersonality> = {
             MINING: 15,
             COOKING: 15,
             SMITHING: 15,
+            THIEVING: 10,
             PRAYER: 10,
             FIREMAKING: 10
         }
@@ -259,6 +261,7 @@ export class BotGoalPlanner {
                 if (step.action === 'fish') return new FishingTask(step);
                 if (step.action === 'firemaking') return new FiremakingTask(step);
                 if (step.action === 'smelt' || step.action === 'smith') return new SmithingTask(step);
+                if (step.action === 'thieve') return new ThievingTask(step);
                 continue;
             }
 

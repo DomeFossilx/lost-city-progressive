@@ -1,29 +1,37 @@
 import {
-    BotTask, Player, Npc, InvType,
-    walkTo, interactNpcOp,
-    findNpcByName, findNpcByPrefix, findNpcBySuffix,
-    hasItem, isInventoryFull, isNear,
-    getBaseLevel, PlayerStat,
-    Items, Locations, getProgressionStep,
-    teleportNear, randInt, bankInvId,
-    INTERACT_TIMEOUT, StuckDetector, ProgressWatchdog,
+    BotTask,
+    Player,
+    Npc,
+    InvType,
+    walkTo,
+    interactNpcOp,
+    findNpcByName,
+    findNpcByPrefix,
+    findNpcBySuffix,
+    hasItem,
+    isInventoryFull,
+    isNear,
+    getBaseLevel,
+    PlayerStat,
+    Items,
+    Locations,
+    getProgressionStep,
+    teleportNear,
+    randInt,
+    bankInvId,
+    INTERACT_TIMEOUT,
+    StuckDetector,
+    ProgressWatchdog,
     openNearbyGate,
-    addXp, setCombatStyle,
-    botJitter, advanceBankWalk,
+    addXp,
+    setCombatStyle,
+    botJitter,
+    advanceBankWalk
 } from '#/engine/bot/tasks/BotTaskBase.js';
 import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
-import {
-    findObjByName,
-    findObjByPrefix,
-    interactHeldOp,
-    pickupGroundItem,
-    removeItem,
-    findNpcFiltered,
-    npcMatchesName,
-    getNpcCombatLevel,
-    findAggressorNpc,
-} from '#/engine/bot/BotAction.js';
+import { findObjByName, findObjByPrefix, findObjNear, findAnyObj, interactHeldOp, pickupGroundItem, removeItem, findNpcFiltered, npcMatchesName, getNpcCombatLevel, findAggressorNpc, interactIF_UseOp, interactObjOp } from '#/engine/bot/BotAction.js';
 import NpcType from '#/cache/config/NpcType.js';
+import { Interfaces } from '#/engine/bot/BotKnowledge.js';
 
 // ── Shared NPC claim registry ─────────────────────────────────────────────────
 // Module-level set of NPC keys currently targeted by any CombatTask instance.
@@ -39,42 +47,30 @@ function _npcKey(npc: Npc): number {
 }
 
 type CombatExtra = {
-    npcName?: string;
     npcType?: string;
     npcTypes?: string[];
+    hitsToKill?: number;
+    itemsGained?: string[];
+    npcName?: string;
     npcPrefix?: string;
     npcSuffix?: string;
-    hitsToKill?: number;
 };
 
 // Melee style rotation: accurate(0)→attack, aggressive(1)→strength, defensive(3)→defence
 const TRAIN_CYCLE: Array<{ stat: PlayerStat; style: 0 | 1 | 3 }> = [
-    { stat: PlayerStat.ATTACK,   style: 0 },
+    { stat: PlayerStat.ATTACK, style: 0 },
     { stat: PlayerStat.STRENGTH, style: 1 },
-    { stat: PlayerStat.DEFENCE,  style: 3 },
+    { stat: PlayerStat.DEFENCE, style: 3 }
 ];
 
 export class CombatTask extends BotTask {
     private step: SkillStep;
     private readonly primaryStat: PlayerStat; // governs location/progression
-    private stat: PlayerStat;                 // current training stat (rotates per kill)
+    private stat: PlayerStat; // current training stat (rotates per kill)
     private trainIndex = 0;
     private readonly noAttackTimeoutTicks = 12; // RS2 rounds are 5-6 ticks; allow ~2 full rounds before timeout
 
-    private state:
-        | 'walk'
-        | 'patrol'
-        | 'scan'
-        | 'interact'
-        | 'flee'
-        | 'shop_walk'
-        | 'shop_open'
-        | 'shop_sell'
-        | 'bank_walk'
-        | 'bank_deposit'
-        | 'loot'
-        | 'bury'
-        = 'walk';
+    private state: 'walk' | 'patrol' | 'scan' | 'interact' | 'flee' | 'shop_walk' | 'shop_open' | 'shop_sell' | 'bank_walk' | 'bank_deposit' | 'loot' | 'bury' = 'walk';
 
     private interactTicks = 0;
     private approachTicks = 0;
@@ -84,7 +80,7 @@ export class CombatTask extends BotTask {
     private readonly FLEE_TICKS = 12; // run for ~12 ticks before resuming combat
 
     private lastBuryTime = Date.now();
-    private readonly BURY_INTERVAL = .10 * 60 * 1000;
+    private readonly BURY_INTERVAL = 0.1 * 60 * 1000;
     private buryCount = 0;
     private buryWaitTicks = 0;
 
@@ -99,6 +95,8 @@ export class CombatTask extends BotTask {
 
     private patrolTarget: [number, number] | null = null;
     private patrolTicks = 0;
+
+    private hasFoughtInArea = false;
 
     constructor(step: SkillStep, stat: PlayerStat) {
         super('Combat');
@@ -135,9 +133,7 @@ export class CombatTask extends BotTask {
 
         if (this.interrupted) return;
 
-        const banking =
-            this.state === 'bank_walk' ||
-            this.state === 'bank_deposit';
+        const banking = this.state === 'bank_walk' || this.state === 'bank_deposit';
 
         if (this.watchdog.check(player, banking)) {
             this._log(player, 'WATCHDOG TRIGGERED → interrupt', 'watchdog');
@@ -172,12 +168,10 @@ export class CombatTask extends BotTask {
             }
         }
 
-        const hasBones =
-            hasItem(player, Items.BONES) ||
-            hasItem(player, Items.BIG_BONES);
+        const hasBones = hasItem(player, Items.BONES) || hasItem(player, Items.BIG_BONES);
 
         const inventoryFull = isInventoryFull(player);
-        const timeReady = (now - this.lastBuryTime) >= this.BURY_INTERVAL;
+        const timeReady = now - this.lastBuryTime >= this.BURY_INTERVAL;
         const shouldBury = hasBones && timeReady;
 
         if (this.state !== 'bury' && shouldBury) {
@@ -186,7 +180,7 @@ export class CombatTask extends BotTask {
             return;
         }
 
-       if (this.state === 'bury') {
+        if (this.state === 'bury') {
             const inv = player.getInventory(InvType.INV);
             if (!inv) {
                 this.state = 'scan';
@@ -241,10 +235,7 @@ export class CombatTask extends BotTask {
 
         // ── LEVEL UPDATE ─────────────────────────────
         const level = getBaseLevel(player, this.primaryStat);
-        const skillName =
-            this.primaryStat === PlayerStat.ATTACK ? 'ATTACK' :
-            this.primaryStat === PlayerStat.STRENGTH ? 'STRENGTH' :
-            'DEFENCE';
+        const skillName = this.primaryStat === PlayerStat.ATTACK ? 'ATTACK' : this.primaryStat === PlayerStat.STRENGTH ? 'STRENGTH' : 'DEFENCE';
 
         const newStep = getProgressionStep(skillName, level);
         if (newStep && newStep.minLevel > this.step.minLevel) {
@@ -258,10 +249,15 @@ export class CombatTask extends BotTask {
         }
 
         // ── INVENTORY FULL ───────────────────────────
-        if (isInventoryFull(player) &&
-            !['bank_walk', 'bank_deposit'].includes(this.state)) {
-            this._log(player, 'INVENTORY FULL → bank_walk', 'inv_full');
-            this.state = 'bank_walk';
+        if (isInventoryFull(player) && !['bank_walk', 'bank_deposit', 'shop_walk', 'shop_open', 'shop_sell'].includes(this.state)) {
+            // Check if we have junk to sell - prefer shop over banking
+            if (this._hasJunkToSell(player)) {
+                this._log(player, 'INVENTORY FULL → shop_walk (selling junk)', 'inv_full');
+                this.state = 'shop_walk';
+            } else {
+                this._log(player, 'INVENTORY FULL → bank_walk', 'inv_full');
+                this.state = 'bank_walk';
+            }
             this.currentNpc = null;
             return;
         }
@@ -286,6 +282,7 @@ export class CombatTask extends BotTask {
         }
 
         if (this.state === 'shop_open') {
+            this.cooldown = 2;
             this.state = 'shop_sell';
             return;
         }
@@ -327,7 +324,19 @@ export class CombatTask extends BotTask {
 
         // ── WALK ──────────────────────────────────────
         if (this.state === 'walk') {
+            // Check for loot only if:
+            // 1. Bot is near the combat area (within 20 tiles)
+            // 2. Has fought in this area before
             const [lx, lz, ll] = this.step.location;
+            const inCombatArea = isNear(player, lx, lz, 20, ll);
+
+            if (inCombatArea && this.hasFoughtInArea) {
+                const lootObj = findAnyObj(player.x, player.z, player.level, 15);
+                if (lootObj) {
+                    this.state = 'loot';
+                    return;
+                }
+            }
 
             if (!isNear(player, lx, lz, 15, ll)) {
                 // Via waypoint: route through intermediate coord before destination.
@@ -354,6 +363,17 @@ export class CombatTask extends BotTask {
         // Run back toward the spawn area until clear of the aggressor.
         // walkTo automatically uses MoveSpeed.RUN when runenergy >= 30 %.
         if (this.state === 'flee') {
+            // Check for loot only if near combat area and has fought before
+            const [flx, flz] = this.step.location;
+            const inCombatArea = isNear(player, flx, flz, 20);
+            if (inCombatArea && this.hasFoughtInArea) {
+                const lootObj = findAnyObj(player.x, player.z, player.level, 15);
+                if (lootObj) {
+                    this.state = 'loot';
+                    return;
+                }
+            }
+
             this.fleeTicks++;
             const [lx, lz] = this.step.location;
             this._stuckWalk(player, lx, lz);
@@ -369,6 +389,17 @@ export class CombatTask extends BotTask {
 
         // ── PATROL ────────────────────────────────────
         if (this.state === 'patrol') {
+            // Check for loot only if near combat area and has fought before
+            const [lx, lz] = this.step.location;
+            const inCombatArea = isNear(player, lx, lz, 20);
+            if (inCombatArea && this.hasFoughtInArea) {
+                const lootObj = findAnyObj(player.x, player.z, player.level, 15);
+                if (lootObj) {
+                    this.state = 'loot';
+                    return;
+                }
+            }
+
             const [cx, cz] = this.step.location;
             const [jcx, jcz] = botJitter(player, cx, cz, 8);
 
@@ -381,10 +412,7 @@ export class CombatTask extends BotTask {
             this.patrolTicks++;
 
             if (!this.patrolTarget || this.patrolTicks % randInt(3, 6) === 0) {
-                this.patrolTarget = [
-                    jcx + randInt(-8, 8),
-                    jcz + randInt(-8, 8)
-                ];
+                this.patrolTarget = [jcx + randInt(-8, 8), jcz + randInt(-8, 8)];
             }
 
             const [tx, tz] = this.patrolTarget;
@@ -417,6 +445,7 @@ export class CombatTask extends BotTask {
                     this.approachTicks = 0;
                     this.lastXp = player.stats[this.stat];
                     this.scanFail = 0;
+                    this.hasFoughtInArea = true;
                     return;
                 }
             }
@@ -432,6 +461,17 @@ export class CombatTask extends BotTask {
 
         // ── SCAN ──────────────────────────────────────
         if (this.state === 'scan') {
+            // Check for loot only if near combat area and has fought before
+            const [lx, lz] = this.step.location;
+            const inCombatArea = isNear(player, lx, lz, 20);
+            if (inCombatArea && this.hasFoughtInArea) {
+                const lootObj = findAnyObj(player.x, player.z, player.level, 15);
+                if (lootObj) {
+                    this.state = 'loot';
+                    return;
+                }
+            }
+
             if (this.intentCooldown === 0) {
                 if (openNearbyGate(player, 30)) {
                     this._log(player, 'opened gate during scan', 'gate_open_scan');
@@ -485,29 +525,25 @@ export class CombatTask extends BotTask {
             this.approachTicks = 0;
             this.lastXp = player.stats[this.stat];
             this.scanFail = 0;
+            this.hasFoughtInArea = true;
             return;
         }
 
         // ── LOOT ──────────────────────────────────────
         if (this.state === 'loot') {
-            let obj =
-                findObjByName(player.x, player.z, player.level, 'bones', 6) ??
-                findObjByName(player.x, player.z, player.level, 'big bones', 6);
+            // Blocklist: items to skip picking up
+            const BLOCKLIST = [288]; // goblin mail
 
-            if (!obj) {
-                obj =
-                    findObjByPrefix(player.x, player.z, player.level, 'coin', 6) ??
-                    findObjByPrefix(player.x, player.z, player.level, 'arrow', 6);
+            // Find any ground object - picks up everything
+            let obj = findAnyObj(player.x, player.z, player.level, 15);
+
+            // Skip blocked items
+            if (obj && BLOCKLIST.includes(obj.type)) {
+                obj = null;
             }
 
             if (!obj) {
-                if (hasItem(player, Items.BONES) || hasItem(player, Items.BIG_BONES)) {
-                    this._log(player, 'no loot → bury', 'no_loot_bury');
-                    this.state = 'bury';
-                } else {
-                    this._log(player, 'no loot → scan', 'no_loot');
-                    this.state = 'scan';
-                }
+                this.state = 'interact';
                 return;
             }
 
@@ -518,28 +554,9 @@ export class CombatTask extends BotTask {
                 return;
             }
 
-            // Directly add to inventory and remove from world — bypasses the engine
-            // interaction system which has unreliable timing for Obj OP triggers.
-            const picked = pickupGroundItem(player, obj as any);
-
-            if (!picked) {
-                // Obj went invalid between finding it and picking it up (another player,
-                // despawn race, no inventory space). Skip it and scan for the next target.
-                this._log(player, `pickup failed ${obj.type} → scan`, 'pickup_fail');
-                this.state = 'scan';
-                return;
-            }
-
-            this._log(player, `picked up ${obj.type} @ ${obj.x},${obj.z}`, `pickup_${obj.type}`);
-            this.watchdog.notifyActivity();
-
-            const isBones = obj.type === Items.BONES || obj.type === Items.BIG_BONES;
-            if (isBones) {
-                // Item is already in inventory — go bury immediately.
-                this.buryWaitTicks = 0;
-                this.state = 'bury';
-            }
+            interactObjOp(player, obj, 3);
             this.cooldown = randInt(1, 2);
+            this.state = 'scan';
             return;
         }
 
@@ -644,6 +661,8 @@ export class CombatTask extends BotTask {
         this.patrolTicks = 0;
         this.fleeTicks = 0;
 
+        this.hasFoughtInArea = false;
+
         this.lastBuryTime = 0; // expire immediately so timer-fallback fires on first tick with bones
         this.buryCount = 0;
         this.buryWaitTicks = 0;
@@ -681,32 +700,20 @@ export class CombatTask extends BotTask {
 
         const names: string[] = [];
         if (extra.npcTypes?.length) names.push(...extra.npcTypes);
-        if (extra.npcType)          names.push(extra.npcType);
-        if (extra.npcName)          names.push(extra.npcName);
+        if (extra.npcType) names.push(extra.npcType);
+        if (extra.npcName) names.push(extra.npcName);
 
         for (const name of names.sort(() => Math.random() - 0.5)) {
-            const npc = findNpcFiltered(
-                player.x, player.z, player.level,
-                npc => npcMatchesName(npc, name) && this._isNpcAvailable(npc),
-                radius
-            );
+            const npc = findNpcFiltered(player.x, player.z, player.level, npc => npcMatchesName(npc, name) && this._isNpcAvailable(npc), radius);
             if (npc) return npc;
         }
 
         if (extra.npcPrefix) {
-            return findNpcFiltered(
-                player.x, player.z, player.level,
-                npc => !!(NpcType.get(npc.type).debugname?.startsWith(extra.npcPrefix!)) && this._isNpcAvailable(npc),
-                radius
-            );
+            return findNpcFiltered(player.x, player.z, player.level, npc => !!NpcType.get(npc.type).debugname?.startsWith(extra.npcPrefix!) && this._isNpcAvailable(npc), radius);
         }
 
         if (extra.npcSuffix) {
-            return findNpcFiltered(
-                player.x, player.z, player.level,
-                npc => !!(NpcType.get(npc.type).debugname?.endsWith(extra.npcSuffix!)) && this._isNpcAvailable(npc),
-                radius
-            );
+            return findNpcFiltered(player.x, player.z, player.level, npc => !!NpcType.get(npc.type).debugname?.endsWith(extra.npcSuffix!) && this._isNpcAvailable(npc), radius);
         }
 
         return null;
@@ -719,15 +726,11 @@ export class CombatTask extends BotTask {
 
         const names: string[] = [];
         if (extra.npcTypes?.length) names.push(...extra.npcTypes);
-        if (extra.npcType)          names.push(extra.npcType);
-        if (extra.npcName)          names.push(extra.npcName);
+        if (extra.npcType) names.push(extra.npcType);
+        if (extra.npcName) names.push(extra.npcName);
 
         for (const name of names.sort(() => Math.random() - 0.5)) {
-            const npc = findNpcFiltered(
-                player.x, player.z, player.level,
-                npc => npcMatchesName(npc, name) && this._isNpcAvailable(npc),
-                radius
-            );
+            const npc = findNpcFiltered(player.x, player.z, player.level, npc => npcMatchesName(npc, name) && this._isNpcAvailable(npc), radius);
             if (npc) return npc;
         }
 
@@ -744,11 +747,7 @@ export class CombatTask extends BotTask {
      * of the same type with the original target.
      */
     private _isNpcAlive(player: Player, npc: Npc): boolean {
-        return findNpcFiltered(
-            player.x, player.z, player.level,
-            n => n === npc,
-            30
-        ) !== null;
+        return findNpcFiltered(player.x, player.z, player.level, n => n === npc, 30) !== null;
     }
 
     // ─────────────────────────────────────────────
@@ -790,11 +789,7 @@ export class CombatTask extends BotTask {
             return;
         }
 
-        walkTo(
-            player,
-            player.x + randInt(-10, 10),
-            player.z + randInt(-10, 10)
-        );
+        walkTo(player, player.x + randInt(-10, 10), player.z + randInt(-10, 10));
     }
 
     // ─────────────────────────────────────────────
@@ -808,13 +803,8 @@ export class CombatTask extends BotTask {
      */
     private _rerollStep(player: Player): void {
         const level = getBaseLevel(player, this.primaryStat);
-        const skillName =
-            this.primaryStat === PlayerStat.ATTACK   ? 'ATTACK'   :
-            this.primaryStat === PlayerStat.STRENGTH ? 'STRENGTH' : 'DEFENCE';
-        const newStep = getProgressionStep(
-            skillName, level,
-            ids => ids.every(id => hasItem(player, id)),
-        );
+        const skillName = this.primaryStat === PlayerStat.ATTACK ? 'ATTACK' : this.primaryStat === PlayerStat.STRENGTH ? 'STRENGTH' : 'DEFENCE';
+        const newStep = getProgressionStep(skillName, level, ids => ids.every(id => hasItem(player, id)));
         if (newStep) {
             this.step = newStep;
             this.patrolTarget = null;
@@ -824,7 +814,29 @@ export class CombatTask extends BotTask {
     // ─────────────────────────────────────────────
     // SHOP + BANK
     // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────
+    // SHOP + BANK
+    // ─────────────────────────────────────────────
+    private _hasJunkToSell(player: Player): boolean {
+        const inv = player.getInventory(InvType.INV);
+        if (!inv) return false;
+
+        const protectedItems = new Set(this.step.toolItemIds);
+
+        // Check if any item can be sold (not a tool item and not coins)
+        for (let slot = 0; slot < inv.capacity; slot++) {
+            const item = inv.get(slot);
+            if (!item) continue;
+            if (protectedItems.has(item.id)) continue;
+            if (item.id === Items.COINS) continue;
+            return true;
+        }
+
+        return false;
+    }
+
     private _sellJunk(player: Player, shopNpc: Npc): void {
+        //<- shopNpc isn't needed anymore
         const inv = player.getInventory(InvType.INV);
         if (!inv) return;
 
@@ -835,10 +847,15 @@ export class CombatTask extends BotTask {
             if (!item) continue;
 
             if (protectedItems.has(item.id)) continue;
-            if (item.id === Items.COINS) continue;
+            if (item.id === Items.COINS) continue; //<- also not needed anymore.
 
-            interactNpcOp(player, shopNpc, 3);
-            return;
+            if (interactIF_UseOp(player, Interfaces.SHOP_SIDE_INV, item.id, slot, 4)) {
+                //info: Op 4 is sell 10 (Op1 value, op2 sell 1, op3 sell 5, op4 sell 10)(for SHOP_SIDE) Interfaces.SHOP_INV for buy
+                console.log('(' + player.displayName + ') successfully sold item to shop: ' + item.id);
+            } else {
+                console.log('Could not sell item to shop! (' + item.id + ') for (' + player.displayName + ')');
+            }
+            //todo: check if more than 10 and repeat interfaceIF_UseOp
         }
     }
 

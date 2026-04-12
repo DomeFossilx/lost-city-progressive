@@ -59,7 +59,7 @@ import { Inventory } from '#/engine/Inventory.js';
 import { Items } from '#/engine/bot/BotKnowledge.js';
 import UnsetMapFlag from '#/network/game/server/model/UnsetMapFlag.js';
 import Environment from '#/util/Environment.js';
-
+import Component from '#/cache/config/Component.js';
 
 export { PlayerStat };
 
@@ -80,7 +80,7 @@ export { PlayerStat };
 type GatewayRegion = {
     readonly name: string;
     /** Destination is in the gated area. */
-    readonly destInRegion:   (x: number, z: number) => boolean;
+    readonly destInRegion: (x: number, z: number) => boolean;
     /** Bot is already inside — skip gateway routing. */
     readonly playerInRegion: (x: number, z: number) => boolean;
     /** Tile to walk to so the bot faces the gate from the correct side. */
@@ -111,13 +111,13 @@ const GATEWAY_REGIONS: GatewayRegion[] = [
         // handle.  Once the bot reaches the approach tile it is teleported
         // directly to the inside (3271, 3228) — the first open tile past the wall.
         name: 'AlKharid',
-        destInRegion:   (x, z) => x >= 3265 && z >= 3155 && z <= 3242,
+        destInRegion: (x, z) => x >= 3265 && z >= 3155 && z <= 3242,
         playerInRegion: (x, z) => x >= 3267 && z >= 3155 && z <= 3242,
         approachX: 3267,
         approachZ: 3228,
         arrivalRadius: 4,
         teleportDestX: 3271,
-        teleportDestZ: 3228,
+        teleportDestZ: 3228
     },
     {
         // ── Al Kharid exit (inside → Lumbridge) ──────────────────────────────
@@ -131,13 +131,13 @@ const GATEWAY_REGIONS: GatewayRegion[] = [
         // z=3245) must still exit through the west gate regardless of how far
         // north the final destination is.
         name: 'AlKharidExit',
-        destInRegion:   (x, _z) => x < 3267,
+        destInRegion: (x, _z) => x < 3267,
         playerInRegion: (x, _z) => x < 3267,
         approachX: 3270,
         approachZ: 3228,
         arrivalRadius: 4,
         teleportDestX: 3265,
-        teleportDestZ: 3228,
+        teleportDestZ: 3228
     },
     {
         // ── Port Sarim → Karamja (boat) ───────────────────────────────────────
@@ -146,13 +146,13 @@ const GATEWAY_REGIONS: GatewayRegion[] = [
         // (2956, 3143).  The boat costs 30 coins and triggers a dialog that
         // bots cannot handle natively, so teleport is used instead.
         name: 'PortSarimToKaramja',
-        destInRegion:   (x, _z) => x < 2970,
+        destInRegion: (x, _z) => x < 2970,
         playerInRegion: (x, _z) => x < 2970,
         approachX: 3031,
         approachZ: 3217,
         arrivalRadius: 5,
         teleportDestX: 2956,
-        teleportDestZ: 3147,
+        teleportDestZ: 3147
     },
     {
         // ── Karamja → Port Sarim (boat return) ───────────────────────────────
@@ -160,13 +160,13 @@ const GATEWAY_REGIONS: GatewayRegion[] = [
         // e.g. to bank) walk to the Karamja dock (2956, 3145) and are
         // teleported to the Port Sarim arrival tile (3047, 3235).
         name: 'KaramjaToPortSarim',
-        destInRegion:   (x, _z) => x >= 2990,
+        destInRegion: (x, _z) => x >= 2990,
         playerInRegion: (x, _z) => x >= 2990,
         approachX: 2956,
         approachZ: 3145,
         arrivalRadius: 5,
         teleportDestX: 3047,
-        teleportDestZ: 3235,
+        teleportDestZ: 3235
     },
     {
         // ── Lumbridge cow pen ─────────────────────────────────────────────────
@@ -174,11 +174,11 @@ const GATEWAY_REGIONS: GatewayRegion[] = [
         // Bots walking directly to the interior ([3255, 3276]) hit the south
         // fence unless they approach through the gate tile.
         name: 'CowPen',
-        destInRegion:   (x, z) => x >= 3248 && x <= 3265 && z >= 3266 && z <= 3296,
+        destInRegion: (x, z) => x >= 3248 && x <= 3265 && z >= 3266 && z <= 3296,
         playerInRegion: (x, z) => x >= 3248 && x <= 3265 && z >= 3266 && z <= 3296,
         approachX: 3253,
         approachZ: 3263,
-        arrivalRadius: 4,
+        arrivalRadius: 4
     },
     {
         // ── Varrock north (yew trees behind palace) ───────────────────────────
@@ -186,12 +186,12 @@ const GATEWAY_REGIONS: GatewayRegion[] = [
         // only by navigating through the city.  Routing through the Varrock
         // south road entry gives the pathfinder a clear corridor to follow.
         name: 'VarrockNorth',
-        destInRegion:   (x, z) => x >= 3180 && x <= 3240 && z >= 3470,
+        destInRegion: (x, z) => x >= 3180 && x <= 3240 && z >= 3470,
         playerInRegion: (x, z) => x >= 3180 && x <= 3240 && z >= 3430,
         approachX: 3212,
         approachZ: 3432,
-        arrivalRadius: 10,
-    },
+        arrivalRadius: 10
+    }
 ];
 
 // ── Route corridors ───────────────────────────────────────────────────────────
@@ -212,9 +212,9 @@ const GATEWAY_REGIONS: GatewayRegion[] = [
 type RouteCorridor = {
     readonly name: string;
     /** Bot is stuck on the near side of the obstacle. */
-    readonly playerInZone:  (x: number, z: number) => boolean;
+    readonly playerInZone: (x: number, z: number) => boolean;
     /** Destination is on the far side — corridor routing is needed. */
-    readonly destBeyond:    (x: number, z: number) => boolean;
+    readonly destBeyond: (x: number, z: number) => boolean;
     /** Bot has cleared the obstacle — resume normal pathfinding. */
     readonly playerCleared: (x: number, z: number) => boolean;
     /** Safe intermediate tile on the near side of the obstacle. */
@@ -237,12 +237,12 @@ const ROUTE_CORRIDORS: RouteCorridor[] = [
         // From there the remaining distance to any Draynor destination is ≤ 110
         // tiles and the pathfinder has a completely clear westward run.
         name: 'LumbridgeCastleWest',
-        playerInZone:  (x, z) => x > 3226 && z >= 3200 && z <= 3260,
-        destBeyond:    (x, _z) => x < 3185,
+        playerInZone: (x, z) => x > 3226 && z >= 3200 && z <= 3260,
+        destBeyond: (x, _z) => x < 3185,
         playerCleared: (x, _z) => x <= 3200,
         viaX: 3194,
-        viaZ: 3226,
-    },
+        viaZ: 3226
+    }
 ];
 
 /**
@@ -261,8 +261,8 @@ const ROUTE_CORRIDORS: RouteCorridor[] = [
  *   Larger steps are necessary to actually clear a wide obstacle like a castle.
  */
 function _pathTowards(player: Player, destX: number, destZ: number): void {
-    const dx   = destX - player.x;
-    const dz   = destZ - player.z;
+    const dx = destX - player.x;
+    const dz = destZ - player.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
     if (dist < 1) return;
 
@@ -272,27 +272,36 @@ function _pathTowards(player: Player, destX: number, destZ: number): void {
         // Short hop — try direct path first
         let path = botWalkPath(player.level, player.x, player.z, destX, destZ);
         if (path.length === 0) path = botFindPath(player.level, player.x, player.z, destX, destZ);
-        if (path.length > 0) { player.queueWaypoints(path); return; }
+        if (path.length > 0) {
+            player.queueWaypoints(path);
+            return;
+        }
     } else {
         // Long distance — try midpoints at the direct heading then sweep outward
         // so the pathfinder can find a clear intermediate tile around any obstacle
         const segDist = Math.min(90, dist - 1);
         for (const deg of [0, 20, -20, 40, -40, 60, -60]) {
-            const angle = baseAngle + deg * Math.PI / 180;
-            const midX  = Math.round(player.x + Math.cos(angle) * segDist);
-            const midZ  = Math.round(player.z + Math.sin(angle) * segDist);
+            const angle = baseAngle + (deg * Math.PI) / 180;
+            const midX = Math.round(player.x + Math.cos(angle) * segDist);
+            const midZ = Math.round(player.z + Math.sin(angle) * segDist);
             let path = botWalkPath(player.level, player.x, player.z, midX, midZ);
             if (path.length === 0) path = botFindPath(player.level, player.x, player.z, midX, midZ);
-            if (path.length > 0) { player.queueWaypoints(path); return; }
+            if (path.length > 0) {
+                player.queueWaypoints(path);
+                return;
+            }
         }
         // Retry with shorter segments in case the 90-tile target is unreachable
         for (const deg of [0, 20, -20, 40, -40, 60, -60]) {
-            const angle = baseAngle + deg * Math.PI / 180;
-            const midX  = Math.round(player.x + Math.cos(angle) * 60);
-            const midZ  = Math.round(player.z + Math.sin(angle) * 60);
+            const angle = baseAngle + (deg * Math.PI) / 180;
+            const midX = Math.round(player.x + Math.cos(angle) * 60);
+            const midZ = Math.round(player.z + Math.sin(angle) * 60);
             let path = botWalkPath(player.level, player.x, player.z, midX, midZ);
             if (path.length === 0) path = botFindPath(player.level, player.x, player.z, midX, midZ);
-            if (path.length > 0) { player.queueWaypoints(path); return; }
+            if (path.length > 0) {
+                player.queueWaypoints(path);
+                return;
+            }
         }
     }
 
@@ -300,12 +309,15 @@ function _pathTowards(player: Player, destX: number, destZ: number): void {
     // step sizes so the bot can escape wide obstacles, not just doorway-width ones
     for (const step of [50, 25, 15]) {
         for (const deg of [0, 45, -45, 90, -90, 135, -135, 180]) {
-            const angle = baseAngle + deg * Math.PI / 180;
-            const midX  = Math.round(player.x + Math.cos(angle) * step);
-            const midZ  = Math.round(player.z + Math.sin(angle) * step);
-            let path  = botWalkPath(player.level, player.x, player.z, midX, midZ);
+            const angle = baseAngle + (deg * Math.PI) / 180;
+            const midX = Math.round(player.x + Math.cos(angle) * step);
+            const midZ = Math.round(player.z + Math.sin(angle) * step);
+            let path = botWalkPath(player.level, player.x, player.z, midX, midZ);
             if (path.length === 0) path = botFindPath(player.level, player.x, player.z, midX, midZ);
-            if (path.length > 0) { player.queueWaypoints(path); return; }
+            if (path.length > 0) {
+                player.queueWaypoints(path);
+                return;
+            }
         }
     }
 
@@ -348,13 +360,10 @@ export function walkTo(player: Player, destX: number, destZ: number): void {
     // If the destination is inside a gated region and the bot is outside,
     // walk to the approach tile first, then open the gate, then proceed.
     for (const gw of GATEWAY_REGIONS) {
-        if (!gw.destInRegion(destX, destZ))         continue; // dest not in this region
-        if ( gw.playerInRegion(player.x, player.z)) continue; // already inside
+        if (!gw.destInRegion(destX, destZ)) continue; // dest not in this region
+        if (gw.playerInRegion(player.x, player.z)) continue; // already inside
 
-        const gwDist = Math.max(
-            Math.abs(player.x - gw.approachX),
-            Math.abs(player.z - gw.approachZ)
-        ); // Chebyshev distance
+        const gwDist = Math.max(Math.abs(player.x - gw.approachX), Math.abs(player.z - gw.approachZ)); // Chebyshev distance
 
         if (gwDist > gw.arrivalRadius) {
             // Not yet at the approach tile — walk toward it first.
@@ -380,9 +389,9 @@ export function walkTo(player: Player, destX: number, destZ: number): void {
     // of the obstacle so the BFS always has a viable segment to walk.
     if (player.level === 0) {
         for (const corridor of ROUTE_CORRIDORS) {
-            if ( corridor.playerCleared(player.x, player.z)) continue; // already past it
-            if (!corridor.playerInZone(player.x, player.z))  continue; // not in this zone
-            if (!corridor.destBeyond(destX, destZ))           continue; // dest doesn't cross it
+            if (corridor.playerCleared(player.x, player.z)) continue; // already past it
+            if (!corridor.playerInZone(player.x, player.z)) continue; // not in this zone
+            if (!corridor.destBeyond(destX, destZ)) continue; // dest doesn't cross it
 
             _pathTowards(player, corridor.viaX, corridor.viaZ);
             return;
@@ -393,14 +402,64 @@ export function walkTo(player: Player, destX: number, destZ: number): void {
     _pathTowards(player, destX, destZ);
 }
 
+/**
+ * interface interface use operation: 1 - 4
+ * interfaceId, itemId, itemSlot, operation
+ */
+export function interactIF_UseOp(player: Player, intrfce: number, item: number, slot: number, op: 1 | 2 | 3 | 4 | 5): boolean {
+    // jagex has if_button1-5
+    const com = Component.get(intrfce);
+    if (typeof com === 'undefined' || !com.iop || !com.iop.length || !player.isComponentVisible(com)) {
+        return false;
+    }
 
-export function interactHeldOp(
-    player: Player,
-    inv: Inventory,
-    itemId: number,
-    slot: number,
-    op: 1 | 2 | 3 | 4 | 5 | 6
-): boolean {
+    if (!com.iop[op - 1]) {
+        return false;
+    }
+
+    const listener = player.invListeners.find(l => l.com === intrfce);
+    if (!listener) {
+        return false;
+    }
+
+    const inv = player.getInventoryFromListener(listener);
+    if (!inv || !inv.validSlot(slot) || !inv.hasAt(slot, item)) {
+        return false;
+    }
+
+    if (player.delayed) {
+        return false;
+    }
+
+    player.lastItem = item;
+    player.lastSlot = slot;
+
+    let trigger: ServerTriggerType;
+    if (op === 1) {
+        trigger = ServerTriggerType.INV_BUTTON1;
+    } else if (op === 2) {
+        trigger = ServerTriggerType.INV_BUTTON2;
+    } else if (op === 3) {
+        trigger = ServerTriggerType.INV_BUTTON3;
+    } else if (op === 4) {
+        trigger = ServerTriggerType.INV_BUTTON4;
+    } else {
+        trigger = ServerTriggerType.INV_BUTTON5;
+    }
+
+    const script = ScriptProvider.getByTrigger(trigger, intrfce, -1);
+    if (script) {
+        const root = Component.get(com.rootLayer);
+
+        player.executeScript(ScriptRunner.init(script, player), root.overlay == false);
+    } else if (Environment.NODE_DEBUG) {
+        player.messageGame(`No trigger for [${ServerTriggerType.toString(trigger)},${com.comName}]`);
+    }
+
+    return true;
+}
+
+export function interactHeldOp(player: Player, inv: Inventory, itemId: number, slot: number, op: 1 | 2 | 3 | 4 | 5 | 6): boolean {
     const trigger = (ServerTriggerType.OPHELD1 + (op - 1)) as ServerTriggerType;
     if (!inv || !inv.validSlot(slot) || !inv.hasAt(slot, itemId)) {
         player.clearPendingAction();
@@ -432,7 +491,7 @@ export function interactHeldOp(
 /**
  * oplocu handler converted -- useful for cooking, smithing,
  */
-export function interactUseLocOp(player: Player, loc: Loc, item:number, slot:number): boolean {
+export function interactUseLocOp(player: Player, loc: Loc, item: number, slot: number): boolean {
     if (player.delayed) {
         player.write(new UnsetMapFlag());
         return false;
@@ -461,14 +520,7 @@ export function interactUseLocOp(player: Player, loc: Loc, item:number, slot:num
     return true;
 }
 
-export function interactHeldOpU(
-    player: Player,
-    inv: Inventory,
-    itemId: number,
-    slot: number,
-    useItem: number,
-    useSlot: number
-): boolean {
+export function interactHeldOpU(player: Player, inv: Inventory, itemId: number, slot: number, useItem: number, useSlot: number): boolean {
     if (player.delayed) {
         return false;
     }
@@ -476,7 +528,7 @@ export function interactHeldOpU(
     player.lastSlot = slot;
     player.lastUseItem = useItem;
     player.lastUseSlot = useSlot;
-    if(inv.get(slot)?.id !== itemId || inv.get(useSlot)?.id !== useItem) {
+    if (inv.get(slot)?.id !== itemId || inv.get(useSlot)?.id !== useItem) {
         console.log('Useitem data does not match!', itemId, useItem);
         return false;
     }
@@ -529,9 +581,7 @@ export function isMoving(player: Player): boolean {
 
 /** True if the bot is within `dist` tiles of (x, z) on the same floor. */
 export function isNear(player: Player, x: number, z: number, dist: number, level = 0): boolean {
-    return player.level === level &&
-           Math.abs(player.x - x) <= dist &&
-           Math.abs(player.z - z) <= dist;
+    return player.level === level && Math.abs(player.x - x) <= dist && Math.abs(player.z - z) <= dist;
 }
 
 // ── Interactions ──────────────────────────────────────────────────────────────
@@ -555,11 +605,7 @@ export function interactNpcOp(player: Player, npc: Npc, op: 1 | 2 | 3 | 4 | 5): 
     player.setInteraction(Interaction.ENGINE, npc, trigger);
 }
 
-export function interactObjOp(
-    player: Player,
-    obj: Obj,
-    op: 1 | 2 | 3 | 4 | 5
-): void {
+export function interactObjOp(player: Player, obj: Obj, op: 1 | 2 | 3 | 4 | 5): void {
     const trigger = (ServerTriggerType.APOBJ1 + (op - 1)) as ServerTriggerType;
 
     player.clearPendingAction();
@@ -571,11 +617,7 @@ export function interactObjOp(
 }
 
 //Ground items
-function _findObj(
-    cx: number, cz: number, level: number,
-    radius: number,
-    predicate: (obj:Obj) => boolean
-): Obj | null {
+function _findObj(cx: number, cz: number, level: number, radius: number, predicate: (obj: Obj) => boolean): Obj | null {
     let best: Obj | null = null;
     let bestDist = Infinity;
 
@@ -591,7 +633,7 @@ function _findObj(
                 const dist = Math.abs(obj.x - cx) + Math.abs(obj.z - cz);
                 if (dist <= radius * 2 && dist < bestDist) {
                     bestDist = dist;
-                    best     = obj;
+                    best = obj;
                 }
             }
         }
@@ -599,39 +641,25 @@ function _findObj(
     return best;
 }
 
-export function findObjByPrefix(
-    cx: number,
-    cz: number,
-    level: number,
-    prefix: string,
-    radius = 20
-): Obj | null {
+export function findObjByPrefix(cx: number, cz: number, level: number, prefix: string, radius = 20): Obj | null {
     return _findObj(cx, cz, level, radius, obj => {
         const t = ObjType.get(obj.type);
-        return !!(t.debugname?.startsWith(prefix));
+        return !!t.debugname?.startsWith(prefix);
     });
 }
 
-export function findObjNear(
-    cx: number,
-    cz: number,
-    level: number,
-    objTypeId: number,
-    radius = 10
-): Obj | null {
+export function findObjNear(cx: number, cz: number, level: number, objTypeId: number, radius = 10): Obj | null {
     return _findObj(cx, cz, level, radius, obj => obj.type === objTypeId);
 }
 
-export function findObjByName(
-    cx: number,
-    cz: number,
-    level: number,
-    objName: string,
-    radius = 10
-): Obj | null {
+export function findObjByName(cx: number, cz: number, level: number, objName: string, radius = 10): Obj | null {
     const typeId = ObjType.getId(objName);
     if (typeId === -1) return null;
     return findObjNear(cx, cz, level, typeId, radius);
+}
+
+export function findAnyObj(cx: number, cz: number, level: number, radius = 15): Obj | null {
+    return _findObj(cx, cz, level, radius, () => true);
 }
 
 /**
@@ -707,7 +735,7 @@ export function findLocByPrefix(cx: number, cz: number, level: number, prefix: s
 export function findNpcByPrefix(cx: number, cz: number, level: number, prefix: string, radius = 20): Npc | null {
     return _findNpc(cx, cz, level, radius, npc => {
         const t = NpcType.get(npc.type);
-        return !!(t.debugname?.startsWith(prefix));
+        return !!t.debugname?.startsWith(prefix);
     });
 }
 
@@ -716,11 +744,7 @@ export function findNpcByPrefix(cx: number, cz: number, level: number, prefix: s
  * Use this when you need combined type + combat-state + exclusion-set filtering
  * that the named helpers cannot express in a single call.
  */
-export function findNpcFiltered(
-    cx: number, cz: number, level: number,
-    predicate: (npc: Npc) => boolean,
-    radius = 22
-): Npc | null {
+export function findNpcFiltered(cx: number, cz: number, level: number, predicate: (npc: Npc) => boolean, radius = 22): Npc | null {
     return _findNpc(cx, cz, level, radius, predicate);
 }
 
@@ -732,16 +756,12 @@ export function findNpcFiltered(
 export function npcMatchesName(npc: Npc, name: string): boolean {
     const typeId = NpcType.getId(name);
     if (typeId !== -1 && npc.type === typeId) return true;
-    return !!(NpcType.get(npc.type).debugname?.startsWith(name));
+    return !!NpcType.get(npc.type).debugname?.startsWith(name);
 }
 
 // ── Internal zone search ──────────────────────────────────────────────────────
 
-function _findNpc(
-    cx: number, cz: number, level: number,
-    radius: number,
-    predicate: (npc: Npc) => boolean
-): Npc | null {
+function _findNpc(cx: number, cz: number, level: number, radius: number, predicate: (npc: Npc) => boolean): Npc | null {
     let best: Npc | null = null;
     let bestDist = Infinity;
 
@@ -757,7 +777,7 @@ function _findNpc(
                 const dist = Math.abs(npc.x - cx) + Math.abs(npc.z - cz);
                 if (dist <= radius * 2 && dist < bestDist) {
                     bestDist = dist;
-                    best     = npc;
+                    best = npc;
                 }
             }
         }
@@ -765,11 +785,7 @@ function _findNpc(
     return best;
 }
 
-function _findLoc(
-    cx: number, cz: number, level: number,
-    radius: number,
-    predicate: (loc: Loc) => boolean
-): Loc | null {
+function _findLoc(cx: number, cz: number, level: number, radius: number, predicate: (loc: Loc) => boolean): Loc | null {
     let best: Loc | null = null;
     let bestDist = Infinity;
 
@@ -785,7 +801,7 @@ function _findLoc(
                 const dist = Math.abs(loc.x - cx) + Math.abs(loc.z - cz);
                 if (dist <= radius * 2 && dist < bestDist) {
                     bestDist = dist;
-                    best     = loc;
+                    best = loc;
                 }
             }
         }
@@ -897,7 +913,7 @@ export function getNpcCombatLevel(npc: Npc): number {
     const atk = t.stats[0]; // NpcStat.ATTACK
     const def = t.stats[1]; // NpcStat.DEFENCE
     const str = t.stats[2]; // NpcStat.STRENGTH
-    const hp  = t.stats[3]; // NpcStat.HITPOINTS
+    const hp = t.stats[3]; // NpcStat.HITPOINTS
     return Math.max(1, Math.floor((def + hp) * 0.25 + (atk + str) * 0.325));
 }
 
@@ -915,7 +931,7 @@ export function findAggressorNpc(player: Player, radius = 10): Npc | null {
 export function findNpcBySuffix(cx: number, cz: number, level: number, suffix: string, radius = 20): Npc | null {
     return _findNpc(cx, cz, level, radius, npc => {
         const t = NpcType.get(npc.type);
-        return !!(t.debugname?.endsWith(suffix));
+        return !!t.debugname?.endsWith(suffix);
     });
 }
 
@@ -927,11 +943,11 @@ export function findNpcBySuffix(cx: number, cz: number, level: number, suffix: s
  */
 export function isAdjacentToLoc(player: Player, loc: { x: number; z: number; type: number }): boolean {
     const t = LocType.get(loc.type);
-    const w = t.width  ?? 1;
+    const w = t.width ?? 1;
     const l = t.length ?? 1;
     const dx = Math.max(0, Math.max(loc.x - player.x, player.x - (loc.x + w - 1)));
     const dz = Math.max(0, Math.max(loc.z - player.z, player.z - (loc.z + l - 1)));
-    return dx <= 1 && dz <= 1 && (dx + dz) <= 1;
+    return dx <= 1 && dz <= 1 && dx + dz <= 1;
 }
 
 /**
@@ -939,11 +955,11 @@ export function isAdjacentToLoc(player: Player, loc: { x: number; z: number; typ
  * Covers standard "Open", toll gates ("Pay-toll(10gp)"), walk-through doors,
  * and Al Kharid palace curtains (loc_1528: op1="Open").
  */
-const GATE_OPEN_KEYWORDS  = ['open', 'pay', 'pay-toll', 'walk-through', 'pass-through', 'enter'];
+const GATE_OPEN_KEYWORDS = ['open', 'pay', 'pay-toll', 'walk-through', 'pass-through', 'enter'];
 const GATE_CLOSE_KEYWORDS = ['close', 'shut'];
 
 /** Loc debug-name prefixes that represent closeable barriers (curtains, etc.). */
-const BARRIER_NAME_PREFIXES = ['loc_1528'];  // Al Kharid palace curtain (closed state)
+const BARRIER_NAME_PREFIXES = ['loc_1528']; // Al Kharid palace curtain (closed state)
 
 /**
  * Scan within `radius` tiles for any closed door, gate, toll gate, or curtain.
@@ -966,11 +982,9 @@ export function openNearbyGate(player: Player, radius = 30): boolean {
             return true;
         }
 
-        const ops = (t.op ?? [])
-            .filter((o): o is string => typeof o === 'string')
-            .map(o => o.toLowerCase());
+        const ops = (t.op ?? []).filter((o): o is string => typeof o === 'string').map(o => o.toLowerCase());
 
-        const hasOpenOp  = ops.some(op => GATE_OPEN_KEYWORDS.some(kw => op.startsWith(kw)));
+        const hasOpenOp = ops.some(op => GATE_OPEN_KEYWORDS.some(kw => op.startsWith(kw)));
         const hasCloseOp = ops.some(op => GATE_CLOSE_KEYWORDS.some(kw => op === kw));
 
         return hasOpenOp && !hasCloseOp;
