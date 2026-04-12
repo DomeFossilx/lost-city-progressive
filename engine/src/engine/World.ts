@@ -730,7 +730,7 @@ class World {
         this.cycleStats[WorldStat.PLAYER] = Date.now() - start;
     }
 
-  private processLogouts(): void {
+   private processLogouts(): void {
     const start: number = Date.now();
 
     for (const player of this.playerLoop.all()) {
