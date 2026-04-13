@@ -1042,6 +1042,121 @@ export function findNpcBySuffix(cx: number, cz: number, level: number, suffix: s
     });
 }
 
+/**
+ * Has item equipped (itemId)
+ * @param player
+ * @param itemId
+ * @private
+ */
+export function _wornContains(player: Player, itemId: number): boolean {
+    const equip = player.getInventory(InvType.WORN);
+    if (!equip) return false;
+
+    for (let slot = 0; slot < equip.capacity; slot++) {
+        const item = equip.get(slot);
+        if (!item) continue;
+        if(item.id === itemId) return true;
+    }
+
+    return false;
+}
+
+function _getWearSlot(oType: ObjType): number | null {
+    return oType.wearpos ?? oType.wearpos2 ?? oType.wearpos3 ?? null;
+}
+function _getEquippedItem(player: Player, slotId: number) {
+    const equip = player.getInventory(InvType.WORN);
+    if (!equip) return null;
+
+    return equip.get(slotId);
+}
+
+function _getTier(name?: string | null): number {
+    if (!name) return 0;
+
+    name = name.toLowerCase();
+
+    if (name.includes('dragon')) return 6;
+    if (name.includes('rune') || name.includes('giant')) return 5; //<- remove giant for something else, its a custom easter weapon
+    if (name.includes('adamant')) return 4;
+    if (name.includes('mithril')) return 3;
+    if (name.includes('black')) return 2;
+    if (name.includes('steel')) return 1;
+    if (name.includes('iron')) return 0;
+    if (name.includes('bronze')) return 0;
+    return -1;
+}
+
+export function _isUpgrade(newItem: ObjType, currentItem: ObjType | null): boolean {
+    if (!currentItem) return true;
+
+    const newTier = _getTier(newItem.name);
+    const currentTier = _getTier(currentItem.name);
+
+    return newTier > currentTier;
+}
+
+export function _equipLoot(player: Player): void {
+    const inv = player.getInventory(InvType.INV);
+    if (!inv)
+        return;
+
+    for (let slot = 0; slot < inv.capacity; slot++) {
+        const item = inv.get(slot);
+        if (!item) continue;
+        const oType = ObjType.get(item.id);
+        const wearSlot = _getWearSlot(oType);
+        if (wearSlot === null) continue;
+
+        const equipped = _getEquippedItem(player, wearSlot);
+        const equippedType = equipped ? ObjType.get(equipped.id) : null;
+
+        if (wearSlot === 3) { // weapon (attack req)
+            if (_getTier(oType.name) === 6 && player.baseLevels[0] < 60) continue;
+            if (_getTier(oType.name) === 5 && (!oType.name?.toLowerCase().includes('giant') && player.baseLevels[0] < 40)) continue; //<- remove giant for something else?
+            if (_getTier(oType.name) === 4 && player.baseLevels[0] < 30) continue;
+            if (_getTier(oType.name) === 3 && player.baseLevels[0] < 20) continue;
+            if (_getTier(oType.name) === 2 && player.baseLevels[0] < 10) continue;
+            if (_getTier(oType.name) === 1 && player.baseLevels[0] < 5) continue;
+        } else if (wearSlot === 0 //hat
+            //|| wearSlot === 8 //head <- this isn't a real slot
+            || wearSlot === 4 //torso <- These all require defence
+            || wearSlot === 7 //legs
+            || wearSlot === 5) { //shield
+            if (_getTier(oType.name) === 6 && player.baseLevels[1] < 60) continue;
+            if (_getTier(oType.name) === 5 && player.baseLevels[1] < 40) continue;
+            if (_getTier(oType.name) === 4 && player.baseLevels[1] < 30) continue;
+            if (_getTier(oType.name) === 3 && player.baseLevels[1] < 20) continue;
+            if (_getTier(oType.name) === 2 && player.baseLevels[1] < 10) continue;
+            if (_getTier(oType.name) === 1 && player.baseLevels[1] < 5) continue;
+        } else if (wearSlot === 1) { //Cape
+            //We can add different tier systems in each of these.
+        } else if (wearSlot === 2) { //Amulet
+            //For example, tier 1 could be a strength / magic amulet
+            //Tier 2 could be a power amulet
+            //Tier 3 a glory
+        } else if (wearSlot === 9) { //Hands
+            //Not sure if theres much options for 04
+        } else if (wearSlot === 10) { //Feet
+            //Same ->
+        } else if (wearSlot === 12) { //Ring
+            //Same ->
+        } else if (wearSlot === 13) { //Ammo
+            //Bronze - Rune can be tiered
+        } else { //Invalid slot continue;
+            continue;
+        }
+
+        if (!_isUpgrade(oType, equippedType)) continue;
+
+        if (_getTier(oType.name) != -1 && !_wornContains(player, item.id)) {
+            if (interactHeldOp(player, inv, item.id, slot, 2)) {
+                //item equipped
+            }
+        }
+    }
+}
+
 // ── Gate handling ─────────────────────────────────────────────────────────────
 
 /**
