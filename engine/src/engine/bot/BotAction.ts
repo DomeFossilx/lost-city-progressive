@@ -1157,6 +1157,26 @@ export function _equipLoot(player: Player): void {
     }
 }
 
+//Simple varp getting using both id and name as a fallback if they don't match
+export function setVarp(player: Player, varpName: string, varpId: number, varpValue: number) {
+    const varp = VarPlayerType.get(varpId);
+    const varpN = VarPlayerType.getByName(varpName);
+    if(varp) {
+        if(varpN) {
+            if(varpId != varpN.id) {
+                //varpId doesn't match use name preferably
+                player.setVar(varpN.id, varpValue);
+                return;
+            }
+        } else {
+            console.log('Warning: can\'t find varp name: ' + varpName);
+        }
+        player.setVar(varp.id, varpValue);
+    } else {
+        console.log('Error: can\'t find varp id: ' + varpId);
+    }
+}
+
 // ── Gate handling ─────────────────────────────────────────────────────────────
 
 /**
