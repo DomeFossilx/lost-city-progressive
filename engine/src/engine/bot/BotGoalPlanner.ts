@@ -31,6 +31,7 @@ import { CookingTask } from '#/engine/bot/tasks/CookingTask.js';
 import { SmithingTask } from '#/engine/bot/tasks/SmithingTask.js';
 import { ThievingTask } from '#/engine/bot/tasks/ThievingTask.js';
 import { CraftingTask } from '#/engine/bot/tasks/CraftingTask.js';
+import { RangedMagicTask, MIN_COINS_TO_SHOP as RM_MIN_COINS } from '#/engine/bot/tasks/RangedMagicTask.js';
 
 // ── Personality ───────────────────────────────────────────────────────────────
 
@@ -117,7 +118,7 @@ const SKILLS_WITH_CONTENT = new Set(
 // Shops close enough to Lumbridge spawn that bots can reach without getting stuck.
 // Bots will ONLY go to these shops automatically. Starter weapons/tools are given
 // via InitTask so bots never need to walk to Varrock or Port Sarim just to begin.
-const NEARBY_SHOPS = new Set(['BOB_AXES', 'LUMBRIDGE_GENERAL', 'AL_KHARID_SCIMITARS', 'AL_KHARID_CRAFTING']);
+const NEARBY_SHOPS = new Set(['BOB_AXES', 'LUMBRIDGE_GENERAL', 'AL_KHARID_SCIMITARS', 'AL_KHARID_CRAFTING', 'VARROCK_ARCHERY', 'VARROCK_RUNES', 'VARROCK_STAFFS']);
 
 // ── Planner ───────────────────────────────────────────────────────────────────
 
@@ -224,6 +225,16 @@ export class BotGoalPlanner {
                 const craftTask2 = this._findCraftingTask(player);
                 if (craftTask2) return craftTask2;
                 continue; // no viable crafting step right now — try next skill
+            }
+
+            // ── RANGED / MAGIC: both use RangedMagicTask ─────────────────────
+            // The task handles its own equipment purchasing logic (bow + arrows for
+            // ranged, staff + mind runes for magic). It only initiates when the bot
+            // has the required gear OR has ≥ 5 000 coins to buy it.
+            if (skillName === 'RANGED' || skillName === 'MAGIC') {
+                const rmTask = this._findRangedMagicTask(player, stat);
+                if (rmTask) return rmTask;
+                continue;
             }
 
             const step = getProgressionStep(skillName, level);
@@ -468,6 +479,54 @@ export class BotGoalPlanner {
     }
 
     /**
+     * Returns a RangedMagicTask if the bot can do ranged or magic right now.
+     *
+     * Conditions:
+     *   • Has bow + arrows (ranged mode) OR staff_of_air + mind runes (magic mode), OR
+     *   • Has ≥ 5 000 coins total (inv + bank) to buy equipment at Varrock.
+     *
+     * Returns null if neither condition is met (bot can't afford gear yet).
+     */
+    private _findRangedMagicTask(player: Player, stat: PlayerStat): RangedMagicTask | null {
+        // Determine appropriate progression step for the stat
+        const skillName = stat === PlayerStat.RANGED ? 'RANGED' : 'MAGIC';
+        const level = getBaseLevel(player, stat);
+        const step = getProgressionStep(skillName, level);
+        if (!step) return null;
+
+        // Check if bot has ranged gear
+        const hasBow = hasItem(player, Items.SHORTBOW) || hasItem(player, Items.OAK_SHORTBOW);
+        const hasArrows = [Items.BRONZE_ARROW, Items.IRON_ARROW, Items.STEEL_ARROW].some(id => hasItem(player, id));
+
+        // Check if bot has magic gear
+        const hasStaff = hasItem(player, Items.STAFF_OF_AIR);
+        const hasMindRunes = hasItem(player, Items.MIND_RUNE);
+
+        if ((hasBow && hasArrows) || (hasStaff && hasMindRunes)) {
+            return new RangedMagicTask(step, stat);
+        }
+
+        // No equipment — only start if bot has enough coins to buy
+        const coins = countItem(player, Items.COINS);
+        let bankCoins = 0;
+        const bid = bankInvId();
+        if (bid !== -1) {
+            const bank = player.getInventory(bid);
+            if (bank) {
+                for (let i = 0; i < bank.capacity; i++) {
+                    const it = bank.get(i);
+                    if (it?.id === Items.COINS) bankCoins += it.count;
+                }
+            }
+        }
+        if (coins + bankCoins >= RM_MIN_COINS) {
+            return new RangedMagicTask(step, stat);
+        }
+
+        return null;
+    }
+
+    /**
      * Returns skill names in weighted-random order.
      * Skills the bot can't afford (and has no free fallback) sink to the bottom.
      */
@@ -562,7 +621,7 @@ export class BotGoalPlanner {
      * to better equipment via shop trips.
      */
     private _starterItems(): number[] {
-        return [Items.BRONZE_AXE, Items.BRONZE_SWORD, Items.IRON_SCIMITAR, Items.BRONZE_PICKAXE, Items.SMALL_FISHING_NET, Items.TINDERBOX, Items.HAMMER, Items.SHEARS];
+        return [Items.BRONZE_AXE, Items.STAFF_OF_AIR, Items.IRON_SCIMITAR, Items.BRONZE_PICKAXE, Items.SMALL_FISHING_NET, Items.TINDERBOX, Items.HAMMER, Items.SHEARS];
     }
 }
 

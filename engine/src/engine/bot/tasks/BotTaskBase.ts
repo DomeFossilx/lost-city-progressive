@@ -35,6 +35,7 @@ import {
     hasWaypoints,
     addXp,
     setCombatStyle,
+    setAutocastWindStrike,
     openNearbyGate,
     isAdjacentToLoc
 } from '#/engine/bot/BotAction.js';
@@ -215,6 +216,7 @@ export {
     hasWaypoints,
     addXp,
     setCombatStyle,
+    setAutocastWindStrike,
     Items,
     Shops,
     Locations,

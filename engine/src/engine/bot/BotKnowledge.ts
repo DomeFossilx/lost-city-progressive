@@ -180,8 +180,9 @@ export const Locations = {
     LUMBRIDGE_GENERAL: [3213, 3247, 0] as [number, number, number], // ✅ General Store
     GERRANTS_FISHING: [3014, 3224, 0] as [number, number, number], // ✅ Port Sarim — only F2P fishing shop
     VARROCK_SWORD_SHOP: [3205, 3420, 0] as [number, number, number], // ✅ swords/longswords/daggers — no scimitars
-    VARROCK_ARCHERY: [3212, 3414, 0] as [number, number, number], // ✅ Lowe's Archery
-    VARROCK_RUNES: [3253, 3401, 0] as [number, number, number], // ✅ Aubury's Rune Shop
+    VARROCK_ARCHERY: [3233, 3425, 0] as [number, number, number], // ✅ Lowe's Archery
+    VARROCK_RUNES: [3253, 3400, 0] as [number, number, number], // ✅ Aubury's Rune Shop
+    VARROCK_STAFFS: [3203, 3235, 0] as [number, number, number], // ✅ Zaff's Superior Staffs
     AL_KHARID_SCIMITARS: [3274, 3190, 0] as [number, number, number], // ⛩ Zeke's — only F2P scimitar shop
     PORT_SARIM_RUNES: [3013, 3224, 0] as [number, number, number], // ✅
 
@@ -221,6 +222,13 @@ export const Locations = {
     BARBARIANS_VILLAGE: [3082, 3434, 0] as [number, number, number], // ✅ level 17 barbarians, aggressive, open area
     GUARDS_VARROCK: [3224, 3470, 0] as [number, number, number], // ⛩ level 21 guards, north Varrock
     AL_KHARID_WARRIORS: [3294, 3172, 0] as [number, number, number], // ⛩ Al Kharid palace — AlKharid gateway
+    // ── Taverley Dungeon — chaos druids ──────────────────────────────────────
+    // Entrance: surface trapdoor at (2884,3450); underground floor at (2884,9848).
+    // Chaos druids spawn in the open corridor east of the entrance (parsed from
+    // binary NPC map file n45_153): confirmed at x=2929-2937, z=9846-9852, level=0.
+    TAVERLY_DUNGEON_ENTRANCE: [2884, 3450, 0] as [number, number, number],  // ✅ surface side of dungeon trapdoor
+    TAVERLY_DUNGEON_FLOOR: [2884, 9848, 0] as [number, number, number],     // 🚪 underground just inside dungeon (teleJump destination)
+    CHAOS_DRUIDS_TAVERLY: [2933, 9849, 0] as [number, number, number],      // 🚪 centre of chaos druid corridor (level 13, open area)
 
     // ── Skilling stations ─────────────────────────────────────────────────────
     ALKHRAID_RANGE: [3292, 3203, 0] as [number, number, number], // ⛩ Al Kharid palace range — inside palace past curtain (3292,3202)
@@ -333,6 +341,14 @@ export const Shops: Record<string, { location: [number, number, number]; stock: 
         stock: [
             { itemId: Items.SHEARS, cost: 1 },
             { itemId: Items.RING_MOULD, cost: 25 }
+        ]
+    },
+
+    // Zaff's Superior Staffs — Varrock (staff_of_air 1000gp)
+    VARROCK_STAFFS: {
+        location: Locations.VARROCK_STAFFS,
+        stock: [
+            { itemId: Items.STAFF_OF_AIR, cost: 1000 }
         ]
     },
 
@@ -670,7 +686,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             extra: { npcType: 'cow', hitsToKill: 5, itemsGained: ['bones', 'cow_hide', 'raw_beef'] }
         },
         // ── Level 10-19: cows ─────────────────────────────────────────────────
-        // ── Level 20-29: cows + barbarians ───────────────────────────────────
+        // ── Level 20-29: cows + barbarians + chaos druids ────────────────────
         {
             minLevel: 20,
             maxLevel: 99,
@@ -684,8 +700,20 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             itemGained: Items.BONES,
             extra: { npcType: 'barbarian', hitsToKill: 6 }
         },
-        // ── Level 30-39: cows + barbarians (steel) ────────────────────────────
-        // ── Level 40+: Al Kharid warriors (+ barbarian fallback) ─────────────
+        {
+            minLevel: 20,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.CHAOS_DRUIDS_TAVERLY,
+            toolItemIds: [Items.IRON_SCIMITAR],
+            xpPerAction: 160,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'chaos_druid', hitsToKill: 4, dungeon: true }
+        },
+        // ── Level 30-39: cows + barbarians + chaos druids (steel) ────────────
+        // ── Level 40+: Al Kharid warriors (+ barbarian/chaos druid fallback) ─
         {
             minLevel: 40,
             maxLevel: 99,
@@ -708,7 +736,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.CHICKENS_LUMBRIDGE,
-            toolItemIds: [Items.BRONZE_SWORD],
+            toolItemIds: [],
             xpPerAction: 120,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -720,7 +748,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.CHICKENS_LUMBRIDGE2,
-            toolItemIds: [Items.BRONZE_SWORD],
+            toolItemIds: [],
             xpPerAction: 120,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -732,7 +760,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.GOBLINS_LUMBRIDGE,
-            toolItemIds: [Items.BRONZE_SWORD],
+            toolItemIds: [],
             xpPerAction: 120,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -744,7 +772,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.COWS_LUMBRIDGE,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [],
             xpPerAction: 160,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -756,7 +784,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.COWS_LUMBRIDGE2,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [],
             xpPerAction: 160,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -764,7 +792,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             extra: { npcType: 'cow', hitsToKill: 5 }
         },
         // ── Level 10-19: cows ─────────────────────────────────────────────────
-        // ── Level 20-29: cows + barbarians ───────────────────────────────────
+        // ── Level 20-29: cows + barbarians + chaos druids ────────────────────
         {
             minLevel: 20,
             maxLevel: 99,
@@ -778,14 +806,26 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             itemGained: Items.BONES,
             extra: { npcType: 'barbarian', hitsToKill: 6 }
         },
-        // ── Level 30-39: cows + barbarians (steel) ────────────────────────────
-        // ── Level 40+: Al Kharid warriors (+ barbarian fallback) ─────────────
+        {
+            minLevel: 20,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.CHAOS_DRUIDS_TAVERLY,
+            toolItemIds: [Items.IRON_SCIMITAR],
+            xpPerAction: 160,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'chaos_druid', hitsToKill: 4, dungeon: true }
+        },
+        // ── Level 30-39: cows + barbarians + chaos druids (steel) ────────────
+        // ── Level 40+: Al Kharid warriors (+ barbarian/chaos druid fallback) ─
         {
             minLevel: 40,
             maxLevel: 99,
             action: 'combat',
             location: Locations.AL_KHARID_WARRIORS,
-            toolItemIds: [Items.MITHRIL_SCIMITAR],
+            toolItemIds: [Items.STEEL_SCIMITAR],
             xpPerAction: 280,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -802,7 +842,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.CHICKENS_LUMBRIDGE,
-            toolItemIds: [Items.BRONZE_SWORD],
+            toolItemIds: [],
             xpPerAction: 120,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -814,7 +854,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.CHICKENS_LUMBRIDGE2,
-            toolItemIds: [Items.BRONZE_SWORD],
+            toolItemIds: [],
             xpPerAction: 120,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -826,7 +866,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.GOBLINS_LUMBRIDGE,
-            toolItemIds: [Items.BRONZE_SWORD],
+            toolItemIds: [],
             xpPerAction: 120,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -838,7 +878,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.COWS_LUMBRIDGE,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [],
             xpPerAction: 160,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -850,7 +890,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             maxLevel: 99,
             action: 'combat',
             location: Locations.COWS_LUMBRIDGE2,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [],
             xpPerAction: 160,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -858,7 +898,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             extra: { npcType: 'cow', hitsToKill: 5 }
         },
         // ── Level 10-19: cows ─────────────────────────────────────────────────
-        // ── Level 20-29: cows + barbarians ───────────────────────────────────
+        // ── Level 20-29: cows + barbarians + chaos druids ────────────────────
         {
             minLevel: 20,
             maxLevel: 99,
@@ -872,14 +912,26 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             itemGained: Items.BONES,
             extra: { npcType: 'barbarian', hitsToKill: 6 }
         },
-        // ── Level 30-39: cows + barbarians (steel) ────────────────────────────
-        // ── Level 40+: Al Kharid warriors (+ barbarian fallback) ─────────────
+        {
+            minLevel: 20,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.CHAOS_DRUIDS_TAVERLY,
+            toolItemIds: [Items.IRON_SCIMITAR],
+            xpPerAction: 160,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'chaos_druid', hitsToKill: 4, dungeon: true }
+        },
+        // ── Level 30-39: cows + barbarians + chaos druids (steel) ────────────
+        // ── Level 40+: Al Kharid warriors (+ barbarian/chaos druid fallback) ─
         {
             minLevel: 40,
             maxLevel: 99,
             action: 'combat',
             location: Locations.AL_KHARID_WARRIORS,
-            toolItemIds: [Items.MITHRIL_SCIMITAR],
+            toolItemIds: [Items.STEEL_SCIMITAR],
             xpPerAction: 280,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -898,7 +950,9 @@ export const SkillProgression: Record<string, SkillStep[]> = {
 
     // ── Magic ────────────────────────────────────────────────────────────────
     // wind strike: 5.5 xp = 55 internal (magic_combat_spells.dbrow)
+    // Mirrors melee NPC tiers so RangedMagicTask follows the same progression path.
     MAGIC: [
+        // Level 1-19: goblins + chickens (wind strike, no req)
         {
             minLevel: 1,
             maxLevel: 99,
@@ -910,23 +964,127 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             successRate: 0.85,
             itemConsumed: Items.MIND_RUNE,
             extra: { spell: 'wind_strike', npcType: 'goblin' }
+        },
+        {
+            minLevel: 1,
+            maxLevel: 99,
+            action: 'magic',
+            location: Locations.CHICKENS_LUMBRIDGE,
+            toolItemIds: [Items.STAFF_OF_AIR, Items.MIND_RUNE],
+            xpPerAction: 55,
+            ticksPerAction: 5,
+            successRate: 0.85,
+            itemConsumed: Items.MIND_RUNE,
+            extra: { spell: 'wind_strike', npcType: 'chicken' }
+        },
+        // Level 20+: barbarians + chaos druids (wind strike)
+        {
+            minLevel: 20,
+            maxLevel: 99,
+            action: 'magic',
+            location: Locations.BARBARIANS_VILLAGE,
+            via: Locations.WILLOWS_BARBARIAN_VIA,
+            toolItemIds: [Items.STAFF_OF_AIR, Items.MIND_RUNE],
+            xpPerAction: 55,
+            ticksPerAction: 5,
+            successRate: 0.85,
+            itemConsumed: Items.MIND_RUNE,
+            extra: { spell: 'wind_strike', npcType: 'barbarian' }
+        },
+        {
+            minLevel: 20,
+            maxLevel: 99,
+            action: 'magic',
+            location: Locations.CHAOS_DRUIDS_TAVERLY,
+            toolItemIds: [Items.STAFF_OF_AIR, Items.MIND_RUNE],
+            xpPerAction: 55,
+            ticksPerAction: 5,
+            successRate: 0.85,
+            itemConsumed: Items.MIND_RUNE,
+            extra: { spell: 'wind_strike', npcType: 'chaos_druid', dungeon: true }
+        },
+        // Level 40+: Al Kharid warriors (wind strike)
+        {
+            minLevel: 40,
+            maxLevel: 99,
+            action: 'magic',
+            location: Locations.AL_KHARID_WARRIORS,
+            toolItemIds: [Items.STAFF_OF_AIR, Items.MIND_RUNE],
+            xpPerAction: 55,
+            ticksPerAction: 5,
+            successRate: 0.85,
+            itemConsumed: Items.MIND_RUNE,
+            extra: { spell: 'wind_strike', npcType: 'warrior' }
         }
     ],
 
     // ── Ranged ───────────────────────────────────────────────────────────────
-    // bronze arrow: 4.0 xp = 40 internal per hit
+    // XP: 4.0 per bronze arrow hit = 40 internal
+    // Mirrors melee NPC tiers so RangedMagicTask follows the same progression path.
     RANGED: [
+        // Level 1-19: chickens + goblins (shortbow + bronze arrows)
         {
             minLevel: 1,
             maxLevel: 99,
             action: 'ranged',
             location: Locations.CHICKENS_LUMBRIDGE,
-            toolItemIds: [Items.OAK_SHORTBOW, Items.BRONZE_ARROW],
+            toolItemIds: [Items.SHORTBOW, Items.BRONZE_ARROW],
             xpPerAction: 160,
             ticksPerAction: 5,
             successRate: 0.85,
             itemConsumed: Items.BRONZE_ARROW,
             extra: { npcType: 'chicken' }
+        },
+        {
+            minLevel: 1,
+            maxLevel: 99,
+            action: 'ranged',
+            location: Locations.GOBLINS_LUMBRIDGE,
+            toolItemIds: [Items.SHORTBOW, Items.BRONZE_ARROW],
+            xpPerAction: 160,
+            ticksPerAction: 5,
+            successRate: 0.85,
+            itemConsumed: Items.BRONZE_ARROW,
+            extra: { npcTypes: ['goblin', 'man'] }
+        },
+        // Level 20+: barbarians + chaos druids (oak shortbow + bronze arrows)
+        {
+            minLevel: 20,
+            maxLevel: 99,
+            action: 'ranged',
+            location: Locations.BARBARIANS_VILLAGE,
+            via: Locations.WILLOWS_BARBARIAN_VIA,
+            toolItemIds: [Items.OAK_SHORTBOW, Items.BRONZE_ARROW],
+            xpPerAction: 200,
+            ticksPerAction: 5,
+            successRate: 0.85,
+            itemConsumed: Items.BRONZE_ARROW,
+            extra: { npcType: 'barbarian' }
+        },
+        {
+            minLevel: 20,
+            maxLevel: 99,
+            action: 'ranged',
+            location: Locations.CHAOS_DRUIDS_TAVERLY,
+            toolItemIds: [Items.OAK_SHORTBOW, Items.BRONZE_ARROW],
+            xpPerAction: 160,
+            ticksPerAction: 5,
+            successRate: 0.85,
+            itemConsumed: Items.BRONZE_ARROW,
+            extra: { npcType: 'chaos_druid', dungeon: true }
+        },
+        // Level 40+: Al Kharid warriors (oak shortbow + iron arrows)
+        {
+            minLevel: 40,
+            maxLevel: 99,
+            action: 'ranged',
+            location: Locations.AL_KHARID_WARRIORS,
+            toolItemIds: [Items.OAK_SHORTBOW, Items.IRON_ARROW],
+            xpPerAction: 220,
+            ticksPerAction: 5,
+            successRate: 0.9,
+            itemConsumed: Items.IRON_ARROW,
+            extra: { npcType: 'warrior' }
         }
     ],
 

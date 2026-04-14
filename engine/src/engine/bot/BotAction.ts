@@ -861,6 +861,18 @@ export function setCombatStyle(player: Player, style: 0 | 1 | 2 | 3): void {
     if (varp) player.setVar(varp.id, style);
 }
 
+/**
+ * Enables autocast wind strike for bots in magic mode.
+ * Sets autocast_spell = 51 (^wind_strike) and attackstyle_magic = 3 (autocast toggle on).
+ */
+export function setAutocastWindStrike(player: Player): void {
+    const spellVarp = VarPlayerType.getByName('autocast_spell');
+    if (spellVarp) player.setVar(spellVarp.id, 51); // 51 = ^wind_strike
+
+    const styleVarp = VarPlayerType.getByName('attackstyle_magic');
+    if (styleVarp) player.setVar(styleVarp.id, 3); // 3 = spell chosen + autocast enabled
+}
+
 // ── Inventory ─────────────────────────────────────────────────────────────────
 
 export function getBackpack(player: Player) {

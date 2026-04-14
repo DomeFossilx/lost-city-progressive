@@ -99,6 +99,9 @@ export class CombatTask extends BotTask {
 
     private hasFoughtInArea = false;
 
+    /** True once we've done the initial weapon equip-from-inventory on first walk. */
+    private _startEquipDone = false;
+
     constructor(step: SkillStep, stat: PlayerStat) {
         super('Combat');
         this.step = step;
@@ -263,6 +266,16 @@ export class CombatTask extends BotTask {
             return;
         }
 
+        // ── DUNGEON EXIT ──────────────────────────────
+        // If the bot is underground (z > 6000) and needs to bank or shop,
+        // teleJump back to the surface dungeon entrance first so the surface
+        // pathfinder can take over.
+        if ((this.state === 'bank_walk' || this.state === 'shop_walk') && player.z > 6000) {
+            const [ex, ez, el] = Locations.TAVERLY_DUNGEON_ENTRANCE;
+            player.teleJump(ex, ez, el);
+            return;
+        }
+
         // ── SHOP ──────────────────────────────────────
         if (this.state === 'shop_walk') {
             const [sx, sz, sl] = Locations.LUMBRIDGE_GENERAL;
@@ -326,6 +339,15 @@ export class CombatTask extends BotTask {
 
         // ── WALK ──────────────────────────────────────
         if (this.state === 'walk') {
+            // On first entry to walk (task just started or re-assigned after another task),
+            // equip any weapon that accumulated in inventory (e.g. sword drops from a
+            // previous RangedMagicTask run).  _equipLoot is also called after banking, so
+            // this only matters for the very first walk before the first bank trip.
+            if (!this._startEquipDone) {
+                _equipLoot(player);
+                this._startEquipDone = true;
+            }
+
             // Check for loot only if:
             // 1. Bot is near the combat area (within 20 tiles)
             // 2. Has fought in this area before
@@ -341,6 +363,23 @@ export class CombatTask extends BotTask {
             }
 
             if (!isNear(player, lx, lz, 15, ll)) {
+                // ── Dungeon navigation ─────────────────────────────────────────
+                // Combat steps with extra.dungeon=true target underground areas
+                // (z > 6000). The pathfinder cannot route across the surface/dungeon
+                // boundary, so we walk the bot to the entrance then teleJump inside.
+                const extra = this.step.extra as { dungeon?: boolean } | undefined;
+                if (extra?.dungeon && lz > 6000 && player.z < 6000) {
+                    const [ex, ez] = Locations.TAVERLY_DUNGEON_ENTRANCE;
+                    if (!isNear(player, ex, ez, 6)) {
+                        this._stuckWalk(player, ex, ez);
+                        return;
+                    }
+                    // At entrance — teleJump to dungeon floor just inside
+                    const [fx, fz, fl] = Locations.TAVERLY_DUNGEON_FLOOR;
+                    player.teleJump(fx, fz, fl);
+                    return;
+                }
+
                 // Via waypoint: route through intermediate coord before destination.
                 // Used to steer around obstacles (e.g. Draynor Mansion for Barbarian
                 // Village combat area).  Only apply when the bot hasn't yet passed it.
