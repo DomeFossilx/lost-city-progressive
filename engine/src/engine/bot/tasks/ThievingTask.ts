@@ -40,6 +40,8 @@ const THIEF_STUN_DAMAGE = 3;
 const HP_DANGER_THRESHOLD = 5;
 /** Soft threshold — stop pickpocketing and bank/heal when HP drops this low. */
 const HP_SAFE_THRESHOLD = 15;
+/** Pre-emptive heal threshold — eat BEFORE pickpocket if HP is below this */
+const HP_PREEMPTIVE_THRESHOLD = 30;
 const HEAL_IF_HP_BELOW = 20;
 const MAX_TICKETS = 5;
 
@@ -49,6 +51,7 @@ export class ThievingTask extends BotTask {
     private state: string = 'walk';
 
     private lastXp = 0;
+    private lastHp = 0;
     private interactTicks = 0;
     private stunTicks = 0;
     private currentNpc: Npc | null = null;
@@ -225,7 +228,22 @@ export class ThievingTask extends BotTask {
                 return;
             }
 
-            // Check if need to heal first
+            // Solution A: Pre-emptive HP check - eat BEFORE pickpocket if HP is low
+            const hpBeforePickpocket = player.stats[PlayerStat.HITPOINTS];
+            if (hpBeforePickpocket < HP_PREEMPTIVE_THRESHOLD) {
+                const hasFood = this._hasFoodInInventory(player);
+                if (hasFood) {
+                    this.debug(player, `HP pre-emptively low (${hpBeforePickpocket}), eating first`);
+                    this.state = 'eat';
+                    return;
+                }
+                // No food, bank to get food or switch task
+                this.debug(player, `HP pre-emptively low (${hpBeforePickpocket}), no food, banking`);
+                this.state = 'bank_walk';
+                return;
+            }
+
+            // Check if need to heal first (for lower HP)
             if (this._shouldHeal(player)) {
                 // Check if we have food in inventory
                 const hasFood = this._hasFoodInInventory(player);
@@ -240,6 +258,9 @@ export class ThievingTask extends BotTask {
                 return;
             }
 
+            // Track HP before attempting pickpocket (Solution C)
+            this.lastHp = player.stats[PlayerStat.HITPOINTS];
+
             this.interactTicks++;
             interactNpcOp(player, this.currentNpc, 3); // op 3 = pickpocket
 
@@ -251,6 +272,24 @@ export class ThievingTask extends BotTask {
             this.debug(player, `pickpocket sent`);
 
             return;
+        }
+
+        // ── Solution C: Check for unexpected HP drop after cooldown ────────
+        // After cooldown just finished (cooldown was 1, now 0), if HP dropped
+        // significantly without XP gain, the pickpocket failed and NPC retaliated
+        if (this.state === 'pickpocket' && this.cooldown === 0 && this.lastHp > 0) {
+            const currentHp = player.stats[PlayerStat.HITPOINTS];
+            const hpDrop = this.lastHp - currentHp;
+            if (hpDrop > 0 && this.lastXp === player.stats[PlayerStat.THIEVING]) {
+                // XP didn't change but HP dropped - pickpocket failed, NPC hit us
+                this.debug(player, `HP dropped by ${hpDrop} without XP gain - failed pickpocket, fleeing`);
+                this.state = 'flee';
+                this.stunTicks = 0;
+                this.lastHp = 0; // Reset so we don't check again
+                return;
+            }
+            // Reset lastHp after checking so we don't keep checking old value
+            this.lastHp = 0;
         }
 
         // ── Check XP gain for success ─────────────────────────────────
@@ -270,10 +309,11 @@ export class ThievingTask extends BotTask {
         this.interactTicks = 0;
     }
 
-    override reset(): void {
+    reset(): void {
         super.reset();
         this.state = 'walk';
         this.lastXp = 0;
+        this.lastHp = 0;
         this.interactTicks = 0;
         this.stunTicks = 0;
         this.currentNpc = null;

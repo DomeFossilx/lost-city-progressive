@@ -33,6 +33,7 @@ import { ThievingTask } from '#/engine/bot/tasks/ThievingTask.js';
 import { CraftingTask } from '#/engine/bot/tasks/CraftingTask.js';
 import { RangedMagicTask, MIN_COINS_TO_SHOP as RM_MIN_COINS } from '#/engine/bot/tasks/RangedMagicTask.js';
 import { RunecraftingTask } from '#/engine/bot/tasks/RunecraftingTask.js';
+import { FletchingTask } from '#/engine/bot/tasks/FletchingTask.js';
 
 // ── Personality ───────────────────────────────────────────────────────────────
 
@@ -52,9 +53,10 @@ export const Personalities: Record<string, BotPersonality> = {
             SMITHING: 15,
             THIEVING: 15,
             PRAYER: 10,
-            FIREMAKING: 15,
+            FIREMAKING: 9,  // 35% share of the fletch/FM pair (9:17 ≈ 35:65)
             CRAFTING: 12,
-            RUNECRAFT: 5  // unlocks once a talisman drops
+            FLETCHING: 17, // 65% share of the fletch/FM pair
+            RUNECRAFT: 5   // unlocks once a talisman drops
         }
     },
     FIGHTER: {
@@ -82,9 +84,10 @@ export const Personalities: Record<string, BotPersonality> = {
             PRAYER: 5,
             RANGED: 4,
             MAGIC: 4,
-            FIREMAKING: 25,
+            FIREMAKING: 13, // 35% share of the fletch/FM pair (13:24 ≈ 35:65)
             CRAFTING: 6,
-            RUNECRAFT: 8  // unlocks once a talisman drops
+            FLETCHING: 24, // 65% share of the fletch/FM pair
+            RUNECRAFT: 8   // unlocks once a talisman drops
         }
     }
 };
@@ -197,7 +200,7 @@ export class BotGoalPlanner {
         // Phase 1 (wool spinning) goes through the normal weighted rotation below
         // so it doesn't starve every other skill.
         if ((this.personality.weights['CRAFTING'] ?? 0) > 0) {
-            const mineLevel  = getBaseLevel(player, PlayerStat.MINING);
+            const mineLevel = getBaseLevel(player, PlayerStat.MINING);
             const smithLevel = getBaseLevel(player, PlayerStat.SMITHING);
             if (mineLevel >= 40 && smithLevel >= 40) {
                 const craftTask = this._findCraftingTask(player);
@@ -309,6 +312,30 @@ export class BotGoalPlanner {
                 if (step.action === 'firemaking') return new FiremakingTask(step);
                 if (step.action === 'smelt' || step.action === 'smith') return new SmithingTask(step);
                 if (step.action === 'thieve') return new ThievingTask(step);
+                if (step.action.startsWith('fletch_')) {
+                    // Don't start with fewer than 50 logs — let the bot accumulate
+                    // a worthwhile batch from woodcutting first.
+                    if (step.itemConsumed) {
+                        let totalLogs = countItem(player, step.itemConsumed);
+                        const fletchBid = bankInvId();
+                        if (fletchBid !== -1) {
+                            const bankInv = player.getInventory(fletchBid);
+                            if (bankInv) {
+                                for (let i = 0; i < bankInv.capacity; i++) {
+                                    const it = bankInv.get(i);
+                                    if (it?.id === step.itemConsumed) totalLogs += it.count;
+                                }
+                            }
+                        }
+                        if (totalLogs < 10) continue; //this is where to adjust threshold 
+                    }
+                    // Knife is a starter item but can be lost.  If it's not in
+                    // inventory or bank, buy one from the Lumbridge General Store.
+                    if (!this._hasKnifeAccessible(player)) {
+                        return new ShopTripTask('LUMBRIDGE_GENERAL', Items.KNIFE, 1, 6);
+                    }
+                    return new FletchingTask(step);
+                }
                 continue;
             }
 
@@ -440,7 +467,7 @@ export class BotGoalPlanner {
      * Returns null when neither phase can run right now.
      */
     private _findCraftingTask(player: Player): BotTask | null {
-        const mineLevel  = getBaseLevel(player, PlayerStat.MINING);
+        const mineLevel = getBaseLevel(player, PlayerStat.MINING);
         const smithLevel = getBaseLevel(player, PlayerStat.SMITHING);
         const phase2Unlocked = mineLevel >= 40 && smithLevel >= 40;
 
@@ -475,13 +502,16 @@ export class BotGoalPlanner {
 
         // Need gold bars to be available
         const bid = bankInvId();
-        const hasGoldInInv  = countItem(player, Items.GOLD_BAR) > 0;
-        let hasGoldInBank   = false;
+        const hasGoldInInv = countItem(player, Items.GOLD_BAR) > 0;
+        let hasGoldInBank = false;
         if (bid !== -1) {
             const bank = player.getInventory(bid);
             if (bank) {
                 for (let i = 0; i < bank.capacity; i++) {
-                    if (bank.get(i)?.id === Items.GOLD_BAR) { hasGoldInBank = true; break; }
+                    if (bank.get(i)?.id === Items.GOLD_BAR) {
+                        hasGoldInBank = true;
+                        break;
+                    }
                 }
             }
         }
@@ -643,7 +673,20 @@ export class BotGoalPlanner {
      * to better equipment via shop trips.
      */
     private _starterItems(): number[] {
-        return [Items.BRONZE_AXE, Items.STAFF_OF_AIR, Items.AIR_TALISMAN, Items.IRON_SCIMITAR, Items.BRONZE_PICKAXE, Items.SMALL_FISHING_NET, Items.TINDERBOX, Items.HAMMER, Items.SHEARS];
+        return [Items.BRONZE_AXE, Items.KNIFE, Items.IRON_SCIMITAR, Items.BRONZE_PICKAXE, Items.SMALL_FISHING_NET, Items.TINDERBOX, Items.HAMMER, Items.SHEARS];
+    }
+
+    /** True if knife is in inventory or bank — used to avoid a shop trip when it just needs withdrawing. */
+    private _hasKnifeAccessible(player: Player): boolean {
+        if (hasItem(player, Items.KNIFE)) return true;
+        const bid = bankInvId();
+        if (bid === -1) return false;
+        const bank = player.getInventory(bid);
+        if (!bank) return false;
+        for (let i = 0; i < bank.capacity; i++) {
+            if (bank.get(i)?.id === Items.KNIFE) return true;
+        }
+        return false;
     }
 }
 

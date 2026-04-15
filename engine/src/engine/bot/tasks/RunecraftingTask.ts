@@ -411,7 +411,21 @@ export class RunecraftingTask extends BotTask {
             }
 
             this.craftInteracted = false;
-            this.state = 'check_altar'; // re-evaluate altar in case of level-up
+
+            // Re-evaluate altar for level-ups.
+            // If we unlocked a better altar we need a new talisman → bank first.
+            // Otherwise skip the bank trip and teleport straight back to the mine —
+            // runes stack so they stay in a single inventory slot indefinitely.
+            const nextAltar = this._pickBestAltar(player);
+            if (nextAltar && nextAltar !== this.currentAltar) {
+                this._log(player, `altar upgrade: ${this.currentAltar?.name} → ${nextAltar.name} — banking`, 'altar_up');
+                this.currentAltar = nextAltar;
+                this.pickaxeId    = this._bestPickaxe(player);
+                this.state        = 'bank_walk';
+            } else {
+                // Same altar — go straight back to the mine, no bank stop needed
+                this.state = 'mine_teleport';
+            }
             this.cooldown = 2;
             return;
         }
@@ -567,10 +581,10 @@ export class RunecraftingTask extends BotTask {
      */
     private _findEssenceRock(player: Player): Loc | null {
         return (
-            findLocByName(player.x, player.z, player.level, 'Rune Essence', 15) ??
-            findLocByName(player.x, player.z, player.level, 'rune essence', 15) ??
-            findLocByPrefix(player.x, player.z, player.level, 'rune_essence', 15) ??
-            findLocByPrefix(player.x, player.z, player.level, 'runeessence', 15) 
+            findLocByName(player.x, player.z, player.level, 'blankrunestone', 15) ??
+            findLocByName(player.x, player.z, player.level, 'blankrunestone', 15) ??
+            findLocByPrefix(player.x, player.z, player.level, 'blankrunestone', 15) ??
+            findLocByPrefix(player.x, player.z, player.level, 'blankrunestone', 15) 
             
         );
     }

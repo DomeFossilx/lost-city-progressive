@@ -60,6 +60,7 @@ import { Items } from '#/engine/bot/BotKnowledge.js';
 import UnsetMapFlag from '#/network/game/server/model/UnsetMapFlag.js';
 import Environment from '#/util/Environment.js';
 import Component from '#/cache/config/Component.js';
+import ScriptState from '#/engine/script/ScriptState.js';
 import World from '#/engine/World.js';
 import * as rsbuf from '@2004scape/rsbuf';
 
@@ -580,6 +581,88 @@ export function interactHeldOpU(player: Player, inv: Inventory, itemId: number, 
     if (script) {
         player.executeScript(ScriptRunner.init(script, player), true);
     }
+    return true;
+}
+
+/**
+ * Convenience wrapper: resolve a component name string to its numeric ID and
+ * delegate to interactIfButton.  Returns false if the name is unknown.
+ *
+ * Usage:
+ *   interactIfButtonByName(player, 'multiobj3_close:com_1')
+ *   interactIfButtonByName(player, 'multiobj2:objtext1')
+ */
+export function interactIfButtonByName(player: Player, comName: string): boolean {
+    const comId = Component.getId(comName);
+    if (comId === -1) return false;
+    return interactIfButton(player, comId);
+}
+
+
+export function interactIfButton(player: Player, comId: number): boolean {
+    const com = Component.get(comId);
+    if (typeof com === 'undefined' || !player.isComponentVisible(com)) {
+        return false;
+    }
+
+    player.lastCom = comId;
+
+    if (player.resumeButtons.indexOf(player.lastCom) !== -1) {
+        if (player.activeScript && player.activeScript.execution === ScriptState.PAUSEBUTTON) {
+            player.executeScript(player.activeScript, true, true);
+        }
+    } else {
+        const root = Component.get(com.rootLayer);
+
+        const script = ScriptProvider.getByTriggerSpecific(ServerTriggerType.IF_BUTTON, comId, -1);
+        if (script) {
+            player.executeScript(ScriptRunner.init(script, player), root.overlay == false);
+        } else if (Environment.NODE_DEBUG) {
+            player.messageGame(`No trigger for [if_button,${com.comName}]`);
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Usage:
+ * @param player - Player from botPlayer
+ * @param pid - Target Player PID (Maybe slot in 254?)
+ * @param op  - op 1-4
+ */
+export function interactPlayerOp(player: Player, pid: number, op: number): boolean {
+    if (player.delayed) {
+        player.write(new UnsetMapFlag());
+        return false;
+    }
+
+    const other = World.getPlayer(pid);
+    if (!other) {
+        player.write(new UnsetMapFlag());
+        player.clearPendingAction();
+        return false;
+    }
+
+    if (!rsbuf.hasPlayer(player.slot, other.slot)) {
+        player.write(new UnsetMapFlag());
+        player.clearPendingAction();
+        return false;
+    }
+
+    let mode: ServerTriggerType;
+    if (op === 1) {
+        mode = ServerTriggerType.APPLAYER1;
+    } else if (op === 2) {
+        mode = ServerTriggerType.APPLAYER2;
+    } else if (op === 3) {
+        mode = ServerTriggerType.APPLAYER3;
+    } else {
+        mode = ServerTriggerType.APPLAYER4;
+    }
+
+    player.clearPendingAction();
+    player.setInteraction(Interaction.ENGINE, other, mode);
     return true;
 }
 

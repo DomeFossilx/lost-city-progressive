@@ -1,6 +1,7 @@
 export const Items = {
     // Currency
     COINS: 995,
+    KNIFE: 946,
 
     BALL_WOOL: 1759,
     WOOL: 1737,
@@ -112,6 +113,15 @@ export const Items = {
     RING_MOULD: 1592,
     GOLD_RING: 1635,
 
+    // Fletching
+    ARROW_SHAFT: 52,
+    UNSTRUNG_SHORTBOW: 50,
+    UNSTRUNG_LONGBOW: 48,
+    UNSTRUNG_OAK_SHORTBOW: 54,
+    UNSTRUNG_OAK_LONGBOW: 56,
+    UNSTRUNG_WILLOW_SHORTBOW: 60,
+    UNSTRUNG_WILLOW_LONGBOW: 58,
+
     // Firemaking
     TINDERBOX: 590,
 
@@ -150,21 +160,21 @@ export const Items = {
 
     // Higher runes
     COSMIC_RUNE: 564,
-    CHAOS_RUNE:  562,
+    CHAOS_RUNE: 562,
     NATURE_RUNE: 561,
-    LAW_RUNE:    563,
+    LAW_RUNE: 563,
 
     // Runecrafting — essences & talismans (drops/quest items, never purchased)
-    RUNE_ESSENCE:    1436,
-    AIR_TALISMAN:    1438,
-    EARTH_TALISMAN:  1440,
-    FIRE_TALISMAN:   1442,
-    WATER_TALISMAN:  1444,
-    BODY_TALISMAN:   1446,
-    MIND_TALISMAN:   1448,
-    CHAOS_TALISMAN:  1452,
+    RUNE_ESSENCE: 1436,
+    AIR_TALISMAN: 1438,
+    EARTH_TALISMAN: 1440,
+    FIRE_TALISMAN: 1442,
+    WATER_TALISMAN: 1444,
+    BODY_TALISMAN: 1446,
+    MIND_TALISMAN: 1448,
+    CHAOS_TALISMAN: 1452,
     COSMIC_TALISMAN: 1454,
-    LAW_TALISMAN:    1458,
+    LAW_TALISMAN: 1458,
     NATURE_TALISMAN: 1462,
 
     // Grimy herbs (combat drops, e.g. from chaos druids)
@@ -199,17 +209,17 @@ export const Items = {
  * XP values match RS2 (e.g. guam = 2.5 XP stored as 25).
  */
 export const GRIMY_HERB_MAP: Record<number, [number, number]> = {
-    199: [249,  25],  // guam         2.5 XP
-    201: [251,  38],  // marrentill   3.8 XP
-    203: [253,  50],  // tarromin     5.0 XP
-    205: [255,  63],  // harralander  6.3 XP
-    207: [257,  75],  // ranarr       7.5 XP
-    209: [259,  88],  // irit         8.8 XP
-    211: [261, 100],  // avantoe     10.0 XP
-    213: [263, 113],  // kwuarm      11.3 XP
-    215: [265, 125],  // cadantine   12.5 XP
-    217: [267, 138],  // dwarf weed  13.8 XP
-    219: [269, 150],  // torstol     15.0 XP
+    199: [249, 25], // guam         2.5 XP
+    201: [251, 38], // marrentill   3.8 XP
+    203: [253, 50], // tarromin     5.0 XP
+    205: [255, 63], // harralander  6.3 XP
+    207: [257, 75], // ranarr       7.5 XP
+    209: [259, 88], // irit         8.8 XP
+    211: [261, 100], // avantoe     10.0 XP
+    213: [263, 113], // kwuarm      11.3 XP
+    215: [265, 125], // cadantine   12.5 XP
+    217: [267, 138], // dwarf weed  13.8 XP
+    219: [269, 150] // torstol     15.0 XP
 };
 
 export const Objects = {
@@ -289,9 +299,9 @@ export const Locations = {
     // Entrance: surface trapdoor at (2884,3450); underground floor at (2884,9848).
     // Chaos druids spawn in the open corridor east of the entrance (parsed from
     // binary NPC map file n45_153): confirmed at x=2929-2937, z=9846-9852, level=0.
-    TAVERLY_DUNGEON_ENTRANCE: [2884, 3450, 0] as [number, number, number],  // ✅ surface side of dungeon trapdoor
-    TAVERLY_DUNGEON_FLOOR: [2884, 9848, 0] as [number, number, number],     // 🚪 underground just inside dungeon (teleJump destination)
-    CHAOS_DRUIDS_TAVERLY: [2933, 9849, 0] as [number, number, number],      // 🚪 centre of chaos druid corridor (level 13, open area)
+    TAVERLY_DUNGEON_ENTRANCE: [2884, 3450, 0] as [number, number, number], // ✅ surface side of dungeon trapdoor
+    TAVERLY_DUNGEON_FLOOR: [2884, 9848, 0] as [number, number, number], // 🚪 underground just inside dungeon (teleJump destination)
+    CHAOS_DRUIDS_TAVERLY: [2931, 9847, 0] as [number, number, number], // 🚪 centre of chaos druid corridor (level 13, open area)
 
     // ── Skilling stations ─────────────────────────────────────────────────────
     ALKHRAID_RANGE: [3292, 3203, 0] as [number, number, number], // ⛩ Al Kharid palace range — inside palace past curtain (3292,3202)
@@ -317,17 +327,17 @@ export const Locations = {
     THIEVE_VARROCK_WOMAN: [3214, 3437, 0] as [number, number, number], // ✅ Varrock woman
 
     // ── Runecrafting (all teleJump-only — inside special altar zones) ─────────
-    ESSENCE_MINE:  [2898, 4817, 0] as [number, number, number], // 🚪 Rune essence mine (exact rock cluster location)
-    AIR_ALTAR:     [2841, 4829, 0] as [number, number, number], // 🚪 Inside air altar
-    MIND_ALTAR:    [2793, 4828, 0] as [number, number, number], // 🚪 Inside mind altar
-    WATER_ALTAR:   [2726, 4832, 0] as [number, number, number], // 🚪 Inside water altar
-    EARTH_ALTAR:   [2655, 4830, 0] as [number, number, number], // 🚪 Inside earth altar
-    FIRE_ALTAR:    [2583, 4840, 0] as [number, number, number], // 🚪 Inside fire altar
-    BODY_ALTAR:    [2523, 4826, 0] as [number, number, number], // 🚪 Inside body altar
-    COSMIC_ALTAR:  [2162, 4833, 0] as [number, number, number], // 🚪 Inside cosmic altar
-    CHAOS_ALTAR:   [2269, 4843, 0] as [number, number, number], // 🚪 Inside chaos altar
-    NATURE_ALTAR:  [2400, 4835, 0] as [number, number, number], // 🚪 Inside nature altar
-    LAW_ALTAR:     [2464, 4818, 0] as [number, number, number]  // 🚪 Inside law altar
+    ESSENCE_MINE: [2898, 4817, 0] as [number, number, number], // 🚪 Rune essence mine (exact rock cluster location)
+    AIR_ALTAR: [2841, 4829, 0] as [number, number, number], // 🚪 Inside air altar
+    MIND_ALTAR: [2793, 4828, 0] as [number, number, number], // 🚪 Inside mind altar
+    WATER_ALTAR: [2726, 4832, 0] as [number, number, number], // 🚪 Inside water altar
+    EARTH_ALTAR: [2655, 4830, 0] as [number, number, number], // 🚪 Inside earth altar
+    FIRE_ALTAR: [2583, 4840, 0] as [number, number, number], // 🚪 Inside fire altar
+    BODY_ALTAR: [2523, 4826, 0] as [number, number, number], // 🚪 Inside body altar
+    COSMIC_ALTAR: [2162, 4833, 0] as [number, number, number], // 🚪 Inside cosmic altar
+    CHAOS_ALTAR: [2269, 4843, 0] as [number, number, number], // 🚪 Inside chaos altar
+    NATURE_ALTAR: [2400, 4835, 0] as [number, number, number], // 🚪 Inside nature altar
+    LAW_ALTAR: [2464, 4818, 0] as [number, number, number] // 🚪 Inside law altar
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -355,8 +365,9 @@ export const Shops: Record<string, { location: [number, number, number]; stock: 
     LUMBRIDGE_GENERAL: {
         location: Locations.LUMBRIDGE_GENERAL,
         stock: [
+            { itemId: Items.KNIFE,     cost: 6  },
             { itemId: Items.TINDERBOX, cost: 13 },
-            { itemId: Items.SHEARS, cost: 1 }
+            { itemId: Items.SHEARS,    cost: 1  }
         ]
     },
 
@@ -423,9 +434,7 @@ export const Shops: Record<string, { location: [number, number, number]; stock: 
     // Zaff's Superior Staffs — Varrock (staff_of_air 1000gp)
     VARROCK_STAFFS: {
         location: Locations.VARROCK_STAFFS,
-        stock: [
-            { itemId: Items.STAFF_OF_AIR, cost: 1000 }
-        ]
+        stock: [{ itemId: Items.STAFF_OF_AIR, cost: 1000 }]
     },
 
     // Zeke's Superior Scimitars — Al Kharid (ONLY place in F2P)
@@ -1342,25 +1351,92 @@ export const SkillProgression: Record<string, SkillStep[]> = {
     ],
 
     // ── Stubs ─────────────────────────────────────────────────────────────────
-    FLETCHING: [], // requires stringing bows — complex multi-step
-    AGILITY:   [], // requires course loc sequences
+    AGILITY: [], // requires course loc sequences
+
+    // Fletching — use knife on logs near bank
+    // XP from cut_logs.dbrow (productexp field × 10)
+    FLETCHING: [
+        {
+            minLevel: 1,
+            maxLevel: 4,
+            action: 'fletch_shaft',
+            location: Locations.DRAYNOR_BANK,
+            toolItemIds: [Items.KNIFE],
+            xpPerAction: 50,
+            ticksPerAction: 3,
+            successRate: 1.0,
+            itemGained: Items.ARROW_SHAFT,
+            itemConsumed: Items.LOGS,
+            extra: { productCount: 15 }
+        },
+        { minLevel: 5, maxLevel: 9, action: 'fletch_shortbow', location: Locations.DRAYNOR_BANK, toolItemIds: [Items.KNIFE], xpPerAction: 500, ticksPerAction: 4, successRate: 1.0, itemGained: Items.UNSTRUNG_SHORTBOW, itemConsumed: Items.LOGS },
+        { minLevel: 10, maxLevel: 19, action: 'fletch_longbow', location: Locations.DRAYNOR_BANK, toolItemIds: [Items.KNIFE], xpPerAction: 1000, ticksPerAction: 4, successRate: 1.0, itemGained: Items.UNSTRUNG_LONGBOW, itemConsumed: Items.LOGS },
+        {
+            minLevel: 20,
+            maxLevel: 24,
+            action: 'fletch_oak_shortbow',
+            location: Locations.DRAYNOR_BANK,
+            toolItemIds: [Items.KNIFE],
+            xpPerAction: 1650,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.UNSTRUNG_OAK_SHORTBOW,
+            itemConsumed: Items.OAK_LOGS
+        },
+        {
+            minLevel: 25,
+            maxLevel: 34,
+            action: 'fletch_oak_longbow',
+            location: Locations.DRAYNOR_BANK,
+            toolItemIds: [Items.KNIFE],
+            xpPerAction: 2500,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.UNSTRUNG_OAK_LONGBOW,
+            itemConsumed: Items.OAK_LOGS
+        },
+        {
+            minLevel: 35,
+            maxLevel: 39,
+            action: 'fletch_willow_shortbow',
+            location: Locations.DRAYNOR_BANK,
+            toolItemIds: [Items.KNIFE],
+            xpPerAction: 3330,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.UNSTRUNG_WILLOW_SHORTBOW,
+            itemConsumed: Items.WILLOW_LOGS
+        },
+        {
+            minLevel: 40,
+            maxLevel: 99,
+            action: 'fletch_willow_longbow',
+            location: Locations.DRAYNOR_BANK,
+            toolItemIds: [Items.KNIFE],
+            xpPerAction: 4150,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.UNSTRUNG_WILLOW_LONGBOW,
+            itemConsumed: Items.WILLOW_LOGS
+        }
+    ],
 
     // Runecrafting — progression is handled inside RunecraftingTask itself.
     // A single placeholder step here keeps RUNECRAFT in SKILLS_WITH_CONTENT
     // so the goal planner includes it in the weighted rotation.
     RUNECRAFT: [
         {
-            minLevel:      1,
-            maxLevel:      99,
-            action:        'runecraft',
-            location:      Locations.AIR_ALTAR, // placeholder; actual altar chosen by task
-            toolItemIds:   [],                  // talisman is a combat drop, not purchased
-            xpPerAction:   50,                  // 5.0 XP base (air); actual XP computed per altar
+            minLevel: 1,
+            maxLevel: 99,
+            action: 'runecraft',
+            location: Locations.AIR_ALTAR, // placeholder; actual altar chosen by task
+            toolItemIds: [], // talisman is a combat drop, not purchased
+            xpPerAction: 50, // 5.0 XP base (air); actual XP computed per altar
             ticksPerAction: 10,
-            successRate:   1.0,
-            itemGained:    Items.AIR_RUNE,      // placeholder
+            successRate: 1.0,
+            itemGained: Items.AIR_RUNE // placeholder
         }
-    ],
+    ]
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

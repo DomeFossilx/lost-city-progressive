@@ -62,7 +62,7 @@ import NpcType from '#/cache/config/NpcType.js';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 /** Minimum coins needed to go buy ranged/magic equipment from Varrock. */
-export const MIN_COINS_TO_SHOP = 2000;
+export const MIN_COINS_TO_SHOP = 3000;
 
 /** Arrows to buy per trip. */
 const ARROW_BUY_QTY = 500;
