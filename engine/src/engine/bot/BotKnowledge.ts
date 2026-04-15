@@ -148,8 +148,24 @@ export const Items = {
     FIRE_RUNE: 554,
     BODY_RUNE: 559,
 
-    // Talismans (combat drops — bank, never sell)
-    AIR_TALISMAN: 1438,
+    // Higher runes
+    COSMIC_RUNE: 564,
+    CHAOS_RUNE:  562,
+    NATURE_RUNE: 561,
+    LAW_RUNE:    563,
+
+    // Runecrafting — essences & talismans (drops/quest items, never purchased)
+    RUNE_ESSENCE:    1436,
+    AIR_TALISMAN:    1438,
+    EARTH_TALISMAN:  1440,
+    FIRE_TALISMAN:   1442,
+    WATER_TALISMAN:  1444,
+    BODY_TALISMAN:   1446,
+    MIND_TALISMAN:   1448,
+    CHAOS_TALISMAN:  1452,
+    COSMIC_TALISMAN: 1454,
+    LAW_TALISMAN:    1458,
+    NATURE_TALISMAN: 1462,
 
     // Grimy herbs (combat drops, e.g. from chaos druids)
     GRIMY_GUAM: 199,
@@ -298,7 +314,20 @@ export const Locations = {
     THIEVE_LUMBRIDGE_MAN: [3192, 3248, 0] as [number, number, number], // ✅ Lumbridge man
     THIEVE_LUMBRIDGE_WOMAN: [3194, 3250, 0] as [number, number, number], // ✅ Lumbridge woman
     THIEVE_VARROCK_MAN: [3212, 3435, 0] as [number, number, number], // ✅ Varrock man
-    THIEVE_VARROCK_WOMAN: [3214, 3437, 0] as [number, number, number] // ✅ Varrock woman
+    THIEVE_VARROCK_WOMAN: [3214, 3437, 0] as [number, number, number], // ✅ Varrock woman
+
+    // ── Runecrafting (all teleJump-only — inside special altar zones) ─────────
+    ESSENCE_MINE:  [2898, 4817, 0] as [number, number, number], // 🚪 Rune essence mine (exact rock cluster location)
+    AIR_ALTAR:     [2841, 4829, 0] as [number, number, number], // 🚪 Inside air altar
+    MIND_ALTAR:    [2793, 4828, 0] as [number, number, number], // 🚪 Inside mind altar
+    WATER_ALTAR:   [2726, 4832, 0] as [number, number, number], // 🚪 Inside water altar
+    EARTH_ALTAR:   [2655, 4830, 0] as [number, number, number], // 🚪 Inside earth altar
+    FIRE_ALTAR:    [2583, 4840, 0] as [number, number, number], // 🚪 Inside fire altar
+    BODY_ALTAR:    [2523, 4826, 0] as [number, number, number], // 🚪 Inside body altar
+    COSMIC_ALTAR:  [2162, 4833, 0] as [number, number, number], // 🚪 Inside cosmic altar
+    CHAOS_ALTAR:   [2269, 4843, 0] as [number, number, number], // 🚪 Inside chaos altar
+    NATURE_ALTAR:  [2400, 4835, 0] as [number, number, number], // 🚪 Inside nature altar
+    LAW_ALTAR:     [2464, 4818, 0] as [number, number, number]  // 🚪 Inside law altar
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1314,25 +1343,24 @@ export const SkillProgression: Record<string, SkillStep[]> = {
 
     // ── Stubs ─────────────────────────────────────────────────────────────────
     FLETCHING: [], // requires stringing bows — complex multi-step
-    AGILITY: [], // requires course loc sequences
-    RUNECRAFT: [] // requires talisman + altar interaction
-};
+    AGILITY:   [], // requires course loc sequences
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Returns a matching progression step for the given skill and level.
- * When multiple steps match (e.g. chickens OR goblins at level 1) one is
- * chosen at random — giving bots natural variety without any extra logic.
-IEVING: [],
-
-    // Agility — stub (requires course locs not easily spoofed with teleport)
-    AGILITY: [],
-
-    // Runecrafting — stub (requires talisman + altar interaction)
-    RUNECRAFT: [],
+    // Runecrafting — progression is handled inside RunecraftingTask itself.
+    // A single placeholder step here keeps RUNECRAFT in SKILLS_WITH_CONTENT
+    // so the goal planner includes it in the weighted rotation.
+    RUNECRAFT: [
+        {
+            minLevel:      1,
+            maxLevel:      99,
+            action:        'runecraft',
+            location:      Locations.AIR_ALTAR, // placeholder; actual altar chosen by task
+            toolItemIds:   [],                  // talisman is a combat drop, not purchased
+            xpPerAction:   50,                  // 5.0 XP base (air); actual XP computed per altar
+            ticksPerAction: 10,
+            successRate:   1.0,
+            itemGained:    Items.AIR_RUNE,      // placeholder
+        }
+    ],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -32,6 +32,7 @@ import { SmithingTask } from '#/engine/bot/tasks/SmithingTask.js';
 import { ThievingTask } from '#/engine/bot/tasks/ThievingTask.js';
 import { CraftingTask } from '#/engine/bot/tasks/CraftingTask.js';
 import { RangedMagicTask, MIN_COINS_TO_SHOP as RM_MIN_COINS } from '#/engine/bot/tasks/RangedMagicTask.js';
+import { RunecraftingTask } from '#/engine/bot/tasks/RunecraftingTask.js';
 
 // ── Personality ───────────────────────────────────────────────────────────────
 
@@ -49,10 +50,11 @@ export const Personalities: Record<string, BotPersonality> = {
             MINING: 15,
             COOKING: 15,
             SMITHING: 15,
-            THIEVING: 10,
+            THIEVING: 15,
             PRAYER: 10,
-            FIREMAKING: 10,
-            CRAFTING: 12
+            FIREMAKING: 15,
+            CRAFTING: 12,
+            RUNECRAFT: 5  // unlocks once a talisman drops
         }
     },
     FIGHTER: {
@@ -81,7 +83,8 @@ export const Personalities: Record<string, BotPersonality> = {
             RANGED: 4,
             MAGIC: 4,
             FIREMAKING: 25,
-            CRAFTING: 6
+            CRAFTING: 6,
+            RUNECRAFT: 8  // unlocks once a talisman drops
         }
     }
 };
@@ -234,6 +237,16 @@ export class BotGoalPlanner {
             if (skillName === 'RANGED' || skillName === 'MAGIC') {
                 const rmTask = this._findRangedMagicTask(player, stat);
                 if (rmTask) return rmTask;
+                continue;
+            }
+
+            // ── RUNECRAFT: unlocked by owning any talisman (combat drop) ─────
+            // RunecraftingTask manages its own progression and altar selection.
+            // shouldRun() returns false until a talisman is in bank/inventory,
+            // so this candidate is silently skipped until that condition is met.
+            if (skillName === 'RUNECRAFT') {
+                const rcTask = this._findRunecraftingTask(player);
+                if (rcTask) return rcTask;
                 continue;
             }
 
@@ -527,6 +540,15 @@ export class BotGoalPlanner {
     }
 
     /**
+     * Returns a RunecraftingTask if the bot has a talisman (any tier) and a
+     * pickaxe.  The task itself picks the highest qualifying altar internally.
+     */
+    private _findRunecraftingTask(player: Player): RunecraftingTask | null {
+        const task = new RunecraftingTask();
+        return task.shouldRun(player) ? task : null;
+    }
+
+    /**
      * Returns skill names in weighted-random order.
      * Skills the bot can't afford (and has no free fallback) sink to the bottom.
      */
@@ -621,7 +643,7 @@ export class BotGoalPlanner {
      * to better equipment via shop trips.
      */
     private _starterItems(): number[] {
-        return [Items.BRONZE_AXE, Items.STAFF_OF_AIR, Items.IRON_SCIMITAR, Items.BRONZE_PICKAXE, Items.SMALL_FISHING_NET, Items.TINDERBOX, Items.HAMMER, Items.SHEARS];
+        return [Items.BRONZE_AXE, Items.STAFF_OF_AIR, Items.AIR_TALISMAN, Items.IRON_SCIMITAR, Items.BRONZE_PICKAXE, Items.SMALL_FISHING_NET, Items.TINDERBOX, Items.HAMMER, Items.SHEARS];
     }
 }
 

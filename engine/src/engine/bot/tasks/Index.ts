@@ -15,3 +15,4 @@ export { CombatTask } from '#/engine/bot/tasks/CombatTask.js';
 export { FiremakingTask } from '#/engine/bot/tasks/FiremakingTask.js';
 export { SmithingTask } from '#/engine/bot/tasks/SmithingTask.js';
 export { CraftingTask } from '#/engine/bot/tasks/CraftingTask.js';
+export { RunecraftingTask } from '#/engine/bot/tasks/RunecraftingTask.js';
