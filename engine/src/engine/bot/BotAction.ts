@@ -241,6 +241,22 @@ const ROUTE_CORRIDORS: RouteCorridor[] = [
         viaX: 3194,
         viaZ: 3226,
     },
+    {
+        // ── Lumbridge castle — eastbound bypass ───────────────────────────────
+        // Bots spawning west of the castle (Lumbridge spawn, x < 3200) and
+        // heading east toward the goblins or Al Kharid (x > 3226) have the
+        // castle walls directly across their path.
+        //
+        // Fix: redirect to (3230, 3226) — the main road east of the castle —
+        // before continuing east.  From there the pathfinder has a clear
+        // run to the bridge and beyond.
+        name: 'LumbridgeCastleEast',
+        playerInZone:  (x, z) => x < 3200 && z >= 3200 && z <= 3260,
+        destBeyond:    (x, _z) => x > 3226,
+        playerCleared: (x, _z) => x >= 3220,
+        viaX: 3230,
+        viaZ: 3226,
+    },
 ];
 
 /**
