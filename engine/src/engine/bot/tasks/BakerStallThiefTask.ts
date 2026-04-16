@@ -247,7 +247,7 @@ export class BakerStallThiefTask extends BotTask {
             this.lastXp = player.stats[PlayerStat.THIEVING];
 
             this.watchdog.notifyActivity();
-            this.cooldown = this.ACTION_DELAY + randInt(0, 2); // Human-like randomization
+            this.cooldown = this.ACTION_DELAY; // Removed human-like click delay for in-game bot
 
             // Set state to check stun after cooldown
             this.state = 'VALIDATE';
