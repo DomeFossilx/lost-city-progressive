@@ -56,6 +56,8 @@ import ScriptRunner from '#/engine/script/ScriptRunner.js';
 import { EntityLifeCycle } from '#/engine/entity/EntityLifeCycle.js';
 import ScriptProvider from '#/engine/script/ScriptProvider.js';
 import CategoryType from '#/cache/config/CategoryType.js';
+import SeqType from '#/cache/config/SeqType.js';
+import SpotanimType from '#/cache/config/SpotanimType.js';
 import { Inventory } from '#/engine/Inventory.js';
 import { Items } from '#/engine/bot/BotKnowledge.js';
 import UnsetMapFlag from '#/network/game/server/model/UnsetMapFlag.js';
@@ -66,6 +68,45 @@ import World from '#/engine/World.js';
 import * as rsbuf from '@2004scape/rsbuf';
 
 export { PlayerStat };
+
+// ── Teleport helper ───────────────────────────────────────────────────────────
+
+/**
+ * Plays the magic teleport animation and spotanim on a bot and then teleports
+ * it to (x, z, level).  Mirrors the [proc,player_teleport_normal] RS2 script:
+ *
+ *   anim(human_castteleport, 0);
+ *   spotanim_pl(teleport_casting, 92, 0);
+ *   p_telejump($coord);
+ *
+ * Other players in the zone will see the cast animation on their client for
+ * that tick before the bot's position jumps.  IDs are resolved from config
+ * names so they remain correct across cache versions.
+ *
+ * Use this everywhere a bot needs to teleport instead of calling
+ * player.teleJump() directly.
+ */
+export function botTeleport(player: Player, x: number, z: number, level: number): void {
+    const animId = SeqType.getId('human_castteleport');
+    const spotId = SpotanimType.getId('teleport_casting');
+    if (animId !== -1) player.playAnimation(animId, 0);
+    if (spotId !== -1) player.spotanim(spotId, 92, 0);
+
+    // Defer the position jump by 2 ticks so the cast animation plays at the
+    // SOURCE tile first — mirrors the real [proc,player_teleport_normal] which
+    // does anim(...) → p_delay(2) → p_telejump.  BotPlayer.tick() fires the
+    // actual teleJump once player.delayed is cleared by the engine.
+    player.delayed = true;
+    player.delayedUntil = World.currentTick + 2;
+
+    const bot = (player as any)._bot;
+    if (bot?.setPendingTeleport) {
+        bot.setPendingTeleport(x, z, level);
+    } else {
+        // Safety fallback if somehow no BotPlayer is attached.
+        player.teleJump(x, z, level);
+    }
+}
 
 // ── Walking ───────────────────────────────────────────────────────────────────
 
@@ -403,7 +444,7 @@ export function walkTo(player: Player, destX: number, destZ: number): void {
         // Close to approach tile — cross the gate.
         if (gw.teleportDestX !== undefined && gw.teleportDestZ !== undefined) {
             // Toll/dialog gate that bots can't interact with — teleport through.
-            player.teleJump(gw.teleportDestX, gw.teleportDestZ, player.level);
+            botTeleport(player, gw.teleportDestX, gw.teleportDestZ, player.level);
             return;
         }
         if (openNearbyGate(player, 8)) return; // gate interaction queued, wait

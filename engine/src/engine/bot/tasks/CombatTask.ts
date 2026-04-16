@@ -27,7 +27,8 @@ import {
     setCombatStyle,
     botJitter,
     advanceBankWalk,
-    cleanGrimyHerbs
+    cleanGrimyHerbs,
+    botTeleport
 } from '#/engine/bot/tasks/BotTaskBase.js';
 import type { SkillStep } from '#/engine/bot/tasks/BotTaskBase.js';
 import {
@@ -288,7 +289,7 @@ export class CombatTask extends BotTask {
         // pathfinder can take over.
         if ((this.state === 'bank_walk' || this.state === 'shop_walk') && player.z > 6000) {
             const [ex, ez, el] = Locations.TAVERLY_DUNGEON_ENTRANCE;
-            player.teleJump(ex, ez, el);
+            botTeleport(player, ex, ez, el);
             return;
         }
 
@@ -393,7 +394,7 @@ export class CombatTask extends BotTask {
                     }
                     // At entrance — teleJump to dungeon floor just inside
                     const [fx, fz, fl] = Locations.TAVERLY_DUNGEON_FLOOR;
-                    player.teleJump(fx, fz, fl);
+                    botTeleport(player, fx, fz, fl);
                     return;
                 }
 

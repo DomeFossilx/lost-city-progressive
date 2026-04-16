@@ -44,7 +44,8 @@ import {
     bankInvId,
     StuckDetector,
     ProgressWatchdog,
-    advanceBankWalk
+    advanceBankWalk,
+    botTeleport
 } from '#/engine/bot/tasks/BotTaskBase.js';
 import type { SkillStep } from '#/engine/bot/BotKnowledge.js';
 import { interactHeldOpU, interactUseLocOp } from '#/engine/bot/BotAction.js';
@@ -374,7 +375,7 @@ export class HerbloreTask extends BotTask {
         switch (this.shopPhase) {
             case 0: {
                 // Teleport directly to the shop area
-                player.teleJump(sx, sz, sl);
+                botTeleport(player, sx, sz, sl);
                 this.shopPhase = 1;
                 this.cooldown = 2;
                 return;
@@ -428,7 +429,7 @@ export class HerbloreTask extends BotTask {
         // Teleport to Falador fountain if not already there
         const [fx, fz, fl] = Locations.FALADOR_FOUNTAIN;
         if (!isNear(player, fx, fz, 25, fl)) {
-            player.teleJump(fx, fz, fl);
+            botTeleport(player, fx, fz, fl);
             this.cooldown = 2;
             return;
         }
