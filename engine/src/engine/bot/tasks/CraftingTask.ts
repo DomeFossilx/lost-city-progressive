@@ -97,6 +97,12 @@ export class CraftingTask extends BotTask {
         if (this.step.action.startsWith('craft_leather_')) {
             return hasItem(player, Items.NEEDLE) && hasItem(player, Items.THREAD) && (hasItem(player, Items.LEATHER) || this._hasLeatherAnywhere(player) || hasItem(player, Items.COW_HIDE) || this._hasCowHideInBank(player));
         }
+        if (this.step.action === 'craft_hard_leather_body') {
+            return hasItem(player, Items.NEEDLE) && hasItem(player, Items.THREAD) && (hasItem(player, Items.HARD_LEATHER) || this._hasItemInBank(player, Items.HARD_LEATHER));
+        }
+        if (this.step.action.startsWith('cut_')) {
+            return hasItem(player, Items.CHISEL) && (hasItem(player, this.step.itemConsumed!) || this._hasItemInBank(player, this.step.itemConsumed!));
+        }
         if (!hasItem(player, Items.RING_MOULD)) return false;
         return this._hasGoldBarsAnywhere(player);
     }
@@ -133,8 +139,10 @@ export class CraftingTask extends BotTask {
 
         if (this.phase === 1) {
             this._tickPhase1(player);
-        } else if (this.step.action.startsWith('craft_leather_')) {
+        } else if (this.step.action.startsWith('craft_leather_') || this.step.action === 'craft_hard_leather_body') {
             this._tickLeather(player);
+        } else if (this.step.action.startsWith('cut_')) {
+            this._tickGems(player);
         } else {
             this._tickPhase2(player);
         }
@@ -415,7 +423,12 @@ export class CraftingTask extends BotTask {
             }
 
             case 'withdraw': {
-                if (countItem(player, Items.COW_HIDE) > 0 || this._hasCowHideInBank(player)) {
+                const bid = bankInvId();
+                const inv = player.getInventory(InvType.INV);
+                const bank = bid !== -1 ? player.getInventory(bid) : null;
+
+                // Tanning logic only for soft leather items
+                if (this.step.action !== 'craft_hard_leather_body' && (countItem(player, Items.COW_HIDE) > 0 || this._hasCowHideInBank(player))) {
                     // We have hides to tan
                     const inv = player.getInventory(InvType.INV);
                     const bid = bankInvId();
@@ -449,11 +462,8 @@ export class CraftingTask extends BotTask {
                 }
 
                 // Deposit crafted items
-                const bid = bankInvId();
-                const inv = player.getInventory(InvType.INV);
-                const bank = bid !== -1 ? player.getInventory(bid) : null;
                 if (inv && bank) {
-                    const products = [Items.LEATHER_GLOVES, Items.LEATHER_BOOTS, Items.LEATHER_VAMBRACES, Items.LEATHER_CHAPS, Items.LEATHER_BODY];
+                    const products = [Items.LEATHER_GLOVES, Items.LEATHER_BOOTS, Items.LEATHER_VAMBRACES, Items.LEATHER_CHAPS, Items.LEATHER_BODY, Items.HARD_LEATHER_BODY];
                     for (let i = 0; i < inv.capacity; i++) {
                         const item = inv.get(i);
                         if (item && products.includes(item.id)) {
@@ -494,18 +504,19 @@ export class CraftingTask extends BotTask {
                 }
 
                 // Withdraw leather
-                if (bank && !hasItem(player, Items.LEATHER)) {
+                const leatherId = this.step.itemConsumed!;
+                if (bank && !hasItem(player, leatherId)) {
                     for (let i = 0; i < bank.capacity; i++) {
                         const item = bank.get(i);
-                        if (item?.id === Items.LEATHER) {
-                            const moved = bank.remove(Items.LEATHER, 25);
-                            inv?.add(Items.LEATHER, moved.completed);
+                        if (item?.id === leatherId) {
+                            const moved = bank.remove(leatherId, 25);
+                            inv?.add(leatherId, moved.completed);
                             break;
                         }
                     }
                 }
 
-                if (!hasItem(player, Items.LEATHER)) {
+                if (!hasItem(player, leatherId)) {
                     this.done = true;
                     this.interrupt();
                     return;
@@ -543,9 +554,9 @@ export class CraftingTask extends BotTask {
                 const toTan = Math.min(hideCount, coins);
 
                 if (toTan > 0) {
-                    removeItem(player, Items.COW_HIDE, toTan);
-                    removeItem(player, Items.COINS, toTan);
-                    addItem(player, Items.LEATHER, toTan);
+                    inv.remove(Items.COW_HIDE, toTan);
+                    inv.remove(Items.COINS, toTan);
+                    inv.add(Items.LEATHER, toTan);
                     console.log(`[CraftingTask][${player.username}] Tanned ${toTan} leather`);
                 }
 
@@ -555,7 +566,8 @@ export class CraftingTask extends BotTask {
             }
 
             case 'craft': {
-                if (!hasItem(player, Items.LEATHER)) {
+                const leatherId = this.step.itemConsumed!;
+                if (!hasItem(player, leatherId)) {
                     this.p2State = 'bank_walk';
                     return;
                 }
@@ -563,20 +575,11 @@ export class CraftingTask extends BotTask {
                 const inv = player.getInventory(InvType.INV);
                 if (!inv) return;
 
-                let leatherSlot = -1;
-                for (let i = 0; i < inv.capacity; i++) {
-                    if (inv.get(i)?.id === Items.LEATHER) {
-                        leatherSlot = i;
-                        break;
-                    }
-                }
-
                 // Use needle on leather
-                // In many scripts, it's use needle on leather or leather on needle.
                 const ok = true; // Simulating successful click
                 if (ok) {
-                    player.stats[PlayerStat.CRAFTING] += this.step.xpPerAction;
-                    inv.remove(Items.LEATHER, 1);
+                    addXp(player, PlayerStat.CRAFTING, this.step.xpPerAction);
+                    inv.remove(leatherId, 1);
                     inv.add(this.step.itemGained!, 1);
 
                     // Thread consumption: 1 thread per action (simplified RS logic)
@@ -725,6 +728,17 @@ export class CraftingTask extends BotTask {
         return false;
     }
 
+    private _hasItemInBank(player: Player, itemId: number): boolean {
+        const bid = bankInvId();
+        if (bid === -1) return false;
+        const bank = player.getInventory(bid);
+        if (!bank) return false;
+        for (let i = 0; i < bank.capacity; i++) {
+            if (bank.get(i)?.id === itemId) return true;
+        }
+        return false;
+    }
+
     private _hasLeatherAnywhere(player: Player): boolean {
         if (countItem(player, Items.LEATHER) > 0) return true;
         const bid = bankInvId();
@@ -794,6 +808,101 @@ export class CraftingTask extends BotTask {
             if (!item || keepIds.has(item.id)) continue;
             const moved = inv.remove(item.id, item.count);
             if (moved.completed > 0) bank.add(item.id, moved.completed);
+        }
+    }
+
+    // ── Gem Cutting ───────────────────────────────────────────────────────────
+
+    private _tickGems(player: Player): void {
+        switch (this.p2State) {
+            case 'bank_walk': {
+                const result = advanceBankWalk(player, this.stuck);
+                if (result === 'walk') return;
+                this.cooldown = result === 'ready' ? 3 : 0;
+                this.p2State = 'withdraw';
+                return;
+            }
+
+            case 'withdraw': {
+                const bid = bankInvId();
+                const inv = player.getInventory(InvType.INV);
+                const bank = bid !== -1 ? player.getInventory(bid) : null;
+
+                // Deposit cut gems
+                if (inv && bank) {
+                    const gems = [Items.SAPPHIRE, Items.EMERALD, Items.RUBY, Items.DIAMOND];
+                    for (let i = 0; i < inv.capacity; i++) {
+                        const item = inv.get(i);
+                        if (item && gems.includes(item.id)) {
+                            const moved = inv.remove(item.id, item.count);
+                            bank.add(item.id, moved.completed);
+                        }
+                    }
+                }
+
+                if (!hasItem(player, Items.CHISEL)) {
+                    if (bank) {
+                        for (let i = 0; i < bank.capacity; i++) {
+                            if (bank.get(i)?.id === Items.CHISEL) {
+                                bank.remove(Items.CHISEL, 1);
+                                inv?.add(Items.CHISEL, 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!hasItem(player, Items.CHISEL)) {
+                    this.done = true;
+                    this.interrupt();
+                    return;
+                }
+
+                const uncutId = this.step.itemConsumed!;
+                if (!hasItem(player, uncutId)) {
+                    if (bank) {
+                        for (let i = 0; i < bank.capacity; i++) {
+                            const it = bank.get(i);
+                            if (it?.id === uncutId) {
+                                const moved = bank.remove(uncutId, 27);
+                                inv?.add(uncutId, moved.completed);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!hasItem(player, uncutId)) {
+                    this.done = true;
+                    this.interrupt();
+                    return;
+                }
+
+                this.p2State = 'craft';
+                return;
+            }
+
+            case 'craft': {
+                const uncutId = this.step.itemConsumed!;
+                if (!hasItem(player, uncutId)) {
+                    this.p2State = 'bank_walk';
+                    return;
+                }
+
+                const inv = player.getInventory(InvType.INV);
+                if (!inv) return;
+
+                // Use chisel on uncut gem
+                const ok = true;
+                if (ok) {
+                    addXp(player, PlayerStat.CRAFTING, this.step.xpPerAction);
+                    inv.remove(uncutId, 1);
+                    inv.add(this.step.itemGained!, 1);
+                    this.watchdog.notifyActivity();
+                    this.cooldown = randInt(2, 3);
+                }
+                return;
+            }
         }
     }
 

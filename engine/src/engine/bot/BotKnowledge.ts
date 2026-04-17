@@ -121,6 +121,8 @@ export const Items = {
     LEATHER_VAMBRACES: 1063,
     LEATHER_CHAPS: 1095,
     LEATHER_BODY: 1129,
+    HARD_LEATHER: 1743,
+    HARD_LEATHER_BODY: 1131,
 
     // Fletching
     ARROW_SHAFT: 52,
@@ -193,6 +195,17 @@ export const Items = {
     SILK: 950,
     SILVER_ORE: 442,
     SPICE: 2007,
+    GREY_WOLF_FUR: 958,
+    UNCUT_SAPPHIRE: 1623,
+    UNCUT_EMERALD: 1621,
+    UNCUT_RUBY: 1619,
+    UNCUT_DIAMOND: 1617,
+
+    SAPPHIRE: 1609,
+    EMERALD: 1607,
+    RUBY: 1605,
+    DIAMOND: 1603,
+    CHISEL: 1755,
 
     // Higher runes
     COSMIC_RUNE: 564,
@@ -210,16 +223,6 @@ export const Items = {
     MIND_TALISMAN: 1448,
     CHAOS_TALISMAN: 1452,
 
-    AIR_TIARA: 5527,
-    MIND_TIARA: 5529,
-    WATER_TIARA: 5531,
-    BODY_TIARA: 5533,
-    EARTH_TIARA: 5535,
-    FIRE_TIARA: 5537,
-    COSMIC_TIARA: 5539,
-    NATURE_TIARA: 5541,
-    CHAOS_TIARA: 5543,
-    LAW_TIARA: 5545,
     COSMIC_TALISMAN: 1454,
     LAW_TALISMAN: 1458,
     NATURE_TALISMAN: 1462,
@@ -392,14 +395,19 @@ export const Locations = {
     THIEVE_LUMBRIDGE_WOMAN: [3194, 3250, 0] as [number, number, number], // ✅ Lumbridge woman
     THIEVE_VARROCK_MAN: [3212, 3435, 0] as [number, number, number], // ✅ Varrock man
     THIEVE_VARROCK_WOMAN: [3214, 3437, 0] as [number, number, number], // ✅ Varrock woman
+    THIEVE_ALKHARID_WARRIOR: [3294, 3172, 0] as [number, number, number], // ✅ Al Kharid warrior
     THIEVE_DRAYNOR_FARMER: [3081, 3250, 0] as [number, number, number], // ✅ Draynor farmer
     THIEVE_VARROCK_GUARD: [3212, 3474, 0] as [number, number, number], // ✅ Varrock guard
     THIEVE_ARDY_KNIGHT: [2655, 3302, 0] as [number, number, number], // ✅ Ardougne knight
+    THIEVE_PALADIN: [2655, 3295, 0] as [number, number, number], // ✅ Paladin
+    THIEVE_HERO: [2655, 3290, 0] as [number, number, number], // ✅ Hero
 
     // Thieving - Stalls
     SILK_STALL: [2662, 3314, 0] as [number, number, number],
     SILVER_STALL: [2658, 3313, 0] as [number, number, number],
     SPICE_STALL: [2659, 3310, 0] as [number, number, number],
+    FUR_STALL: [2662, 3305, 0] as [number, number, number],
+    GEM_STALL: [2662, 3310, 0] as [number, number, number],
 
     // ── Herblore supply runs ──────────────────────────────────────────────────
     // All three sites are reached via teleJump from the bank.
@@ -508,7 +516,10 @@ export const Shops: Record<string, { location: [number, number, number]; stock: 
         location: Locations.AL_KHARID_CRAFTING_SHOP,
         stock: [
             { itemId: Items.SHEARS, cost: 1 },
-            { itemId: Items.RING_MOULD, cost: 25 }
+            { itemId: Items.RING_MOULD, cost: 25 },
+            { itemId: Items.CHISEL, cost: 1 },
+            { itemId: Items.NEEDLE, cost: 1 },
+            { itemId: Items.THREAD, cost: 1 }
         ]
     },
 
@@ -1411,16 +1422,26 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         { minLevel: 5, maxLevel: 19, action: 'thieve_stall', location: Locations.BAKER_STALL, toolItemIds: [], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.CAKE, extra: { stallId: 2561, npcType: 'Baker' } },
         // Level 10-24: Farmer
         { minLevel: 10, maxLevel: 24, action: 'thieve', location: Locations.THIEVE_DRAYNOR_FARMER, toolItemIds: [], xpPerAction: 145, ticksPerAction: 4, successRate: 0.75, itemGained: Items.COINS, extra: { npcName: 'farmer' } },
+        // Level 25-39: Warrior
+        { minLevel: 25, maxLevel: 39, action: 'thieve', location: Locations.THIEVE_ALKHARID_WARRIOR, toolItemIds: [], xpPerAction: 260, ticksPerAction: 4, successRate: 0.7, itemGained: Items.COINS, extra: { npcName: 'warrior' } },
         // Level 20-41: Silk stall
         { minLevel: 20, maxLevel: 41, action: 'thieve_stall', location: Locations.SILK_STALL, toolItemIds: [], xpPerAction: 240, ticksPerAction: 4, successRate: 1.0, itemGained: Items.SILK, extra: { stallId: 2560, npcType: 'Silk merchant' } },
         // Level 40-54: Guard
         { minLevel: 40, maxLevel: 54, action: 'thieve', location: Locations.THIEVE_VARROCK_GUARD, toolItemIds: [], xpPerAction: 468, ticksPerAction: 4, successRate: 0.65, itemGained: Items.COINS, extra: { npcName: 'guard' } },
         // Level 42-64: Silver stall
         { minLevel: 42, maxLevel: 64, action: 'thieve_stall', location: Locations.SILVER_STALL, toolItemIds: [], xpPerAction: 540, ticksPerAction: 4, successRate: 1.0, itemGained: Items.SILVER_ORE, extra: { stallId: 2562, npcType: 'Silver merchant' } },
+        // Level 35-41: Fur stall
+        { minLevel: 35, maxLevel: 41, action: 'thieve_stall', location: Locations.FUR_STALL, toolItemIds: [], xpPerAction: 360, ticksPerAction: 4, successRate: 1.0, itemGained: Items.GREY_WOLF_FUR, extra: { stallId: 2563, npcType: 'Fur merchant' } },
         // Level 55-99: Knight
         { minLevel: 55, maxLevel: 99, action: 'thieve', location: Locations.THIEVE_ARDY_KNIGHT, toolItemIds: [], xpPerAction: 843, ticksPerAction: 4, successRate: 0.6, itemGained: Items.COINS, extra: { npcName: 'knight' } },
-        // Level 65-99: Spice stall
-        { minLevel: 65, maxLevel: 99, action: 'thieve_stall', location: Locations.SPICE_STALL, toolItemIds: [], xpPerAction: 810, ticksPerAction: 4, successRate: 1.0, itemGained: Items.SPICE, extra: { stallId: 2564, npcType: 'Spice seller' } }
+        // Level 65-74: Spice stall
+        { minLevel: 65, maxLevel: 74, action: 'thieve_stall', location: Locations.SPICE_STALL, toolItemIds: [], xpPerAction: 810, ticksPerAction: 4, successRate: 1.0, itemGained: Items.SPICE, extra: { stallId: 2564, npcType: 'Spice seller' } },
+        // Level 70-79: Paladin
+        { minLevel: 70, maxLevel: 79, action: 'thieve', location: Locations.THIEVE_PALADIN, toolItemIds: [], xpPerAction: 1518, ticksPerAction: 4, successRate: 0.5, itemGained: Items.COINS, extra: { npcName: 'paladin' } },
+        // Level 75-99: Gem stall
+        { minLevel: 75, maxLevel: 99, action: 'thieve_stall', location: Locations.GEM_STALL, toolItemIds: [], xpPerAction: 1600, ticksPerAction: 4, successRate: 1.0, itemGained: Items.UNCUT_SAPPHIRE, extra: { stallId: 2565, npcType: 'Gem merchant' } },
+        // Level 80-99: Hero
+        { minLevel: 80, maxLevel: 99, action: 'thieve', location: Locations.THIEVE_HERO, toolItemIds: [], xpPerAction: 2733, ticksPerAction: 4, successRate: 0.4, itemGained: Items.COINS, extra: { npcName: 'hero' } }
     ],
 
     // ── Crafting ─────────────────────────────────────────────────────────────
@@ -1535,7 +1556,7 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         },
         {
             minLevel: 18,
-            maxLevel: 99,
+            maxLevel: 27,
             action: 'craft_leather_body',
             location: Locations.AL_KHARID_BANK,
             toolItemIds: [Items.NEEDLE, Items.THREAD],
@@ -1544,6 +1565,66 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             successRate: 1.0,
             itemGained: Items.LEATHER_BODY,
             itemConsumed: Items.LEATHER
+        },
+        {
+            minLevel: 28,
+            maxLevel: 99,
+            action: 'craft_hard_leather_body',
+            location: Locations.AL_KHARID_BANK,
+            toolItemIds: [Items.NEEDLE, Items.THREAD],
+            xpPerAction: 350,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.HARD_LEATHER_BODY,
+            itemConsumed: Items.HARD_LEATHER
+        },
+        {
+            minLevel: 20,
+            maxLevel: 26,
+            action: 'cut_sapphire',
+            location: Locations.AL_KHARID_BANK,
+            toolItemIds: [Items.CHISEL],
+            xpPerAction: 500,
+            ticksPerAction: 3,
+            successRate: 1.0,
+            itemGained: Items.SAPPHIRE,
+            itemConsumed: Items.UNCUT_SAPPHIRE
+        },
+        {
+            minLevel: 27,
+            maxLevel: 33,
+            action: 'cut_emerald',
+            location: Locations.AL_KHARID_BANK,
+            toolItemIds: [Items.CHISEL],
+            xpPerAction: 675,
+            ticksPerAction: 3,
+            successRate: 1.0,
+            itemGained: Items.EMERALD,
+            itemConsumed: Items.UNCUT_EMERALD
+        },
+        {
+            minLevel: 34,
+            maxLevel: 42,
+            action: 'cut_ruby',
+            location: Locations.AL_KHARID_BANK,
+            toolItemIds: [Items.CHISEL],
+            xpPerAction: 850,
+            ticksPerAction: 3,
+            successRate: 1.0,
+            itemGained: Items.RUBY,
+            itemConsumed: Items.UNCUT_RUBY
+        },
+        {
+            minLevel: 43,
+            maxLevel: 99,
+            action: 'cut_diamond',
+            location: Locations.AL_KHARID_BANK,
+            toolItemIds: [Items.CHISEL],
+            xpPerAction: 1075,
+            ticksPerAction: 3,
+            successRate: 1.0,
+            itemGained: Items.DIAMOND,
+            itemConsumed: Items.UNCUT_DIAMOND
         }
     ],
 

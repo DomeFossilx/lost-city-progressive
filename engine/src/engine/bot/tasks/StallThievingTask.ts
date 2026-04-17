@@ -24,7 +24,6 @@ export class StallThievingTask extends BotTask {
     private readonly stallId: number;
     private readonly ownerNpcName: string;
     private readonly GUARD_NPC_ID = 9;
-    private readonly lootId: number;
     private readonly ACTION_DELAY = 7;
 
     private readonly stuck = new StuckDetector(30, 4, 2);
@@ -35,7 +34,6 @@ export class StallThievingTask extends BotTask {
         this.step = step;
         this.stallId = step.extra?.stallId as number;
         this.ownerNpcName = step.extra?.npcType as string;
-        this.lootId = step.itemGained!;
     }
 
     private debug(player: Player, message: string): void {
@@ -302,7 +300,12 @@ export class StallThievingTask extends BotTask {
         if (!bank || !inv) return;
         let deposited = 0;
         // Collect all possible loot from all stalls
-        const lootIds = [1891, 1893, 1895, 2309, 1901, 950, 442, 2007];
+        const lootIds = [
+            Items.CAKE, 1893, 1895, Items.BREAD, 1901,
+            Items.SILK, Items.SILVER_ORE, Items.SPICE,
+            Items.GREY_WOLF_FUR, Items.UNCUT_SAPPHIRE,
+            Items.UNCUT_EMERALD, Items.UNCUT_RUBY, Items.UNCUT_DIAMOND
+        ];
         for (let slot = 0; slot < inv.capacity; slot++) {
             const item = inv.get(slot);
             if (!item) continue;
