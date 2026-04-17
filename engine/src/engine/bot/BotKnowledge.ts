@@ -389,6 +389,7 @@ export const Locations = {
     VARROCK_ANVIL: [3188, 3422, 0] as [number, number, number], // ✅
     LUMBRIDGE_ALTAR: [3243, 3210, 0] as [number, number, number], // ✅
     TANNER_AL_KHARID: [3274, 3191, 0] as [number, number, number], // ✅ Ellis the tanner in Al Kharid
+    BARBARIAN_VILLAGE_POTTERY: [3085, 3408, 0] as [number, number, number], // ✅ Barbarian Village pottery wheel
 
     // ── Crafting ──────────────────────────────────────────────────────────────
     FLAX_FIELD: [2743, 3444, 0] as [number, number, number], // ✅
@@ -404,7 +405,6 @@ export const Locations = {
     THIEVE_VARROCK_MAN: [3212, 3435, 0] as [number, number, number], // ✅ Varrock man
     THIEVE_VARROCK_WOMAN: [3214, 3437, 0] as [number, number, number], // ✅ Varrock woman
     THIEVE_ALKHARID_WARRIOR: [3294, 3172, 0] as [number, number, number], // ✅ Al Kharid warrior
-    THIEVE_DRAYNOR_FARMER: [3081, 3250, 0] as [number, number, number], // ✅ Draynor farmer
     THIEVE_VARROCK_GUARD: [3212, 3474, 0] as [number, number, number], // ✅ Varrock guard
     THIEVE_ARDY_KNIGHT: [2655, 3302, 0] as [number, number, number], // ✅ Ardougne knight
     THIEVE_PALADIN: [2655, 3295, 0] as [number, number, number], // ✅ Paladin
@@ -1429,8 +1429,6 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         { minLevel: 1, maxLevel: 9, action: 'thieve', location: Locations.THIEVE_LUMBRIDGE_MAN, toolItemIds: [], xpPerAction: 80, ticksPerAction: 4, successRate: 0.85, itemGained: Items.COINS, extra: { npcName: 'man' } },
         // Level 5-19: Baker's stall (Seers/Ardougne)
         { minLevel: 5, maxLevel: 19, action: 'thieve_stall', location: Locations.BAKER_STALL, toolItemIds: [], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.CAKE, extra: { stallId: 2561, npcType: 'Baker' } },
-        // Level 10-24: Farmer
-        { minLevel: 10, maxLevel: 24, action: 'thieve', location: Locations.THIEVE_DRAYNOR_FARMER, toolItemIds: [], xpPerAction: 145, ticksPerAction: 4, successRate: 0.75, itemGained: Items.COINS, extra: { npcName: 'farmer' } },
         // Level 25-39: Warrior
         { minLevel: 25, maxLevel: 39, action: 'thieve', location: Locations.THIEVE_ALKHARID_WARRIOR, toolItemIds: [], xpPerAction: 260, ticksPerAction: 4, successRate: 0.7, itemGained: Items.COINS, extra: { npcName: 'warrior' } },
         // Level 20-41: Silk stall

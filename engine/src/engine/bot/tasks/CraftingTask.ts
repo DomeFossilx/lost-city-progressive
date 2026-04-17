@@ -926,11 +926,8 @@ export class CraftingTask extends BotTask {
             }
 
             case 'pottery_walk': {
-                // pottery wheel location (simplified to Al Kharid pottery)
-                // [3209, 3212, 0] is one option, but let's just use Barbarian Village or similar
-                // Al Kharid doesn't have a wheel? Actually it does.
-                // Let's just walk near a pottery wheel
-                const wheelPos: [number, number, number] = [3085, 3408, 0]; // Barbarian village pottery
+                // Land near a pottery wheel
+                const wheelPos: [number, number, number] = Locations.BARBARIAN_VILLAGE_POTTERY;
                 if (!isNear(player, wheelPos[0], wheelPos[1], 3, wheelPos[2])) {
                     this._stuckWalk(player, wheelPos[0], wheelPos[1]);
                     return;
