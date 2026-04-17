@@ -101,6 +101,9 @@ export const Items = {
     IRON_KITESHIELD: 1191,
     IRON_PLATEBODY: 1115,
     STEEL_PLATEBODY: 1119,
+    MITHRIL_PLATEBODY: 1121,
+    ADAMANT_PLATEBODY: 1123,
+    RUNE_PLATEBODY: 1127,
 
     IRON_DAGGER: 1203,
     IRON_LONGSWORD: 1293,
@@ -160,6 +163,8 @@ export const Items = {
     IRON_SCIMITAR: 1323,
     STEEL_SCIMITAR: 1325,
     MITHRIL_SCIMITAR: 1329,
+    ADAMANT_SCIMITAR: 1331,
+    RUNE_SCIMITAR: 1333,
 
     // Bows (Varrock archery shop)
     SHORTBOW: 841,
@@ -295,6 +300,7 @@ export const Locations = {
     VARROCK_STAFFS: [3203, 3235, 0] as [number, number, number], // ✅ Zaff's Superior Staffs
     AL_KHARID_SCIMITARS: [3274, 3190, 0] as [number, number, number], // ⛩ Zeke's — only F2P scimitar shop
     PORT_SARIM_RUNES: [3013, 3224, 0] as [number, number, number], // ✅
+    VARROCK_ARMOUR: [3229, 3436, 0] as [number, number, number], // ✅ Horvik's
 
     // ── Woodcutting ───────────────────────────────────────────────────────────
     TREES_LUMBRIDGE: [3194, 3226, 0] as [number, number, number], // ✅ behind Lumbridge castle
@@ -481,6 +487,18 @@ export const Shops: Record<string, { location: [number, number, number]; stock: 
         ]
     },
 
+    // Horvik's Armour Shop — Varrock
+    VARROCK_ARMOUR: {
+        location: Locations.VARROCK_ARMOUR,
+        stock: [
+            { itemId: Items.IRON_PLATEBODY, cost: 210 },
+            { itemId: Items.STEEL_PLATEBODY, cost: 750 },
+            { itemId: Items.MITHRIL_PLATEBODY, cost: 2000 },
+            { itemId: Items.ADAMANT_PLATEBODY, cost: 5000 },
+            { itemId: Items.RUNE_PLATEBODY, cost: 50000 }
+        ]
+    },
+
     // Zaff's Superior Staffs — Varrock (staff_of_air 1000gp)
     VARROCK_STAFFS: {
         location: Locations.VARROCK_STAFFS,
@@ -510,7 +528,9 @@ export const Shops: Record<string, { location: [number, number, number]; stock: 
             { itemId: Items.BRONZE_SCIMITAR, cost: 32 },
             { itemId: Items.IRON_SCIMITAR, cost: 200 },
             { itemId: Items.STEEL_SCIMITAR, cost: 600 },
-            { itemId: Items.MITHRIL_SCIMITAR, cost: 4000 }
+            { itemId: Items.MITHRIL_SCIMITAR, cost: 4000 },
+            { itemId: Items.ADAMANT_SCIMITAR, cost: 8000 },
+            { itemId: Items.RUNE_SCIMITAR, cost: 25000 }
         ]
     }
 };
@@ -849,11 +869,11 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         // ── Level 20-29: cows + barbarians + chaos druids ────────────────────
         {
             minLevel: 20,
-            maxLevel: 99,
+            maxLevel: 29,
             action: 'combat',
             location: Locations.BARBARIANS_VILLAGE,
             via: Locations.WILLOWS_BARBARIAN_VIA,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [Items.IRON_SCIMITAR, Items.IRON_PLATEBODY],
             xpPerAction: 200,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -862,10 +882,10 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         },
         {
             minLevel: 20,
-            maxLevel: 99,
+            maxLevel: 29,
             action: 'combat',
             location: Locations.CHAOS_DRUIDS_TAVERLY,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [Items.IRON_SCIMITAR, Items.IRON_PLATEBODY],
             xpPerAction: 160,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -873,18 +893,44 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             extra: { npcType: 'chaos_druid', hitsToKill: 4, dungeon: true }
         },
         // ── Level 30-39: cows + barbarians + chaos druids (steel) ────────────
-        // ── Level 40+: Al Kharid warriors (+ barbarian/chaos druid fallback) ─
+        {
+            minLevel: 30,
+            maxLevel: 39,
+            action: 'combat',
+            location: Locations.BARBARIANS_VILLAGE,
+            via: Locations.WILLOWS_BARBARIAN_VIA,
+            toolItemIds: [Items.STEEL_SCIMITAR, Items.STEEL_PLATEBODY],
+            xpPerAction: 200,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'barbarian', hitsToKill: 6 }
+        },
+        // ── Level 40-59: Al Kharid warriors
         {
             minLevel: 40,
-            maxLevel: 99,
+            maxLevel: 59,
             action: 'combat',
             location: Locations.AL_KHARID_WARRIORS,
-            toolItemIds: [Items.STEEL_SCIMITAR],
+            toolItemIds: [Items.ADAMANT_SCIMITAR, Items.ADAMANT_PLATEBODY],
             xpPerAction: 280,
             ticksPerAction: 4,
             successRate: 1.0,
             itemGained: Items.BONES,
             extra: { npcType: 'warrior', hitsToKill: 8 }
+        },
+        // ── Level 60-99: Al Kharid warriors (Rune)
+        {
+            minLevel: 60,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.AL_KHARID_WARRIORS,
+            toolItemIds: [Items.RUNE_SCIMITAR, Items.RUNE_PLATEBODY],
+            xpPerAction: 350,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'warrior', hitsToKill: 10 }
         }
     ],
 
@@ -955,11 +1001,11 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         // ── Level 20-29: cows + barbarians + chaos druids ────────────────────
         {
             minLevel: 20,
-            maxLevel: 99,
+            maxLevel: 29,
             action: 'combat',
             location: Locations.BARBARIANS_VILLAGE,
             via: Locations.WILLOWS_BARBARIAN_VIA,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [Items.IRON_SCIMITAR, Items.IRON_PLATEBODY],
             xpPerAction: 200,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -968,10 +1014,10 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         },
         {
             minLevel: 20,
-            maxLevel: 99,
+            maxLevel: 29,
             action: 'combat',
             location: Locations.CHAOS_DRUIDS_TAVERLY,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [Items.IRON_SCIMITAR, Items.IRON_PLATEBODY],
             xpPerAction: 160,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -979,18 +1025,44 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             extra: { npcType: 'chaos_druid', hitsToKill: 4, dungeon: true }
         },
         // ── Level 30-39: cows + barbarians + chaos druids (steel) ────────────
-        // ── Level 40+: Al Kharid warriors (+ barbarian/chaos druid fallback) ─
+        {
+            minLevel: 30,
+            maxLevel: 39,
+            action: 'combat',
+            location: Locations.BARBARIANS_VILLAGE,
+            via: Locations.WILLOWS_BARBARIAN_VIA,
+            toolItemIds: [Items.STEEL_SCIMITAR, Items.STEEL_PLATEBODY],
+            xpPerAction: 200,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'barbarian', hitsToKill: 6 }
+        },
+        // ── Level 40-59: Al Kharid warriors
         {
             minLevel: 40,
-            maxLevel: 99,
+            maxLevel: 59,
             action: 'combat',
             location: Locations.AL_KHARID_WARRIORS,
-            toolItemIds: [Items.STEEL_SCIMITAR],
+            toolItemIds: [Items.ADAMANT_SCIMITAR, Items.ADAMANT_PLATEBODY],
             xpPerAction: 280,
             ticksPerAction: 4,
             successRate: 1.0,
             itemGained: Items.BONES,
             extra: { npcType: 'warrior', hitsToKill: 8 }
+        },
+        // ── Level 60-99: Al Kharid warriors (Rune)
+        {
+            minLevel: 60,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.AL_KHARID_WARRIORS,
+            toolItemIds: [Items.RUNE_SCIMITAR, Items.RUNE_PLATEBODY],
+            xpPerAction: 350,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'warrior', hitsToKill: 10 }
         }
     ],
 
@@ -1061,11 +1133,11 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         // ── Level 20-29: cows + barbarians + chaos druids ────────────────────
         {
             minLevel: 20,
-            maxLevel: 99,
+            maxLevel: 29,
             action: 'combat',
             location: Locations.BARBARIANS_VILLAGE,
             via: Locations.WILLOWS_BARBARIAN_VIA,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [Items.IRON_SCIMITAR, Items.IRON_PLATEBODY],
             xpPerAction: 200,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -1074,10 +1146,10 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         },
         {
             minLevel: 20,
-            maxLevel: 99,
+            maxLevel: 29,
             action: 'combat',
             location: Locations.CHAOS_DRUIDS_TAVERLY,
-            toolItemIds: [Items.IRON_SCIMITAR],
+            toolItemIds: [Items.IRON_SCIMITAR, Items.IRON_PLATEBODY],
             xpPerAction: 160,
             ticksPerAction: 4,
             successRate: 1.0,
@@ -1085,18 +1157,44 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             extra: { npcType: 'chaos_druid', hitsToKill: 4, dungeon: true }
         },
         // ── Level 30-39: cows + barbarians + chaos druids (steel) ────────────
-        // ── Level 40+: Al Kharid warriors (+ barbarian/chaos druid fallback) ─
+        {
+            minLevel: 30,
+            maxLevel: 39,
+            action: 'combat',
+            location: Locations.BARBARIANS_VILLAGE,
+            via: Locations.WILLOWS_BARBARIAN_VIA,
+            toolItemIds: [Items.STEEL_SCIMITAR, Items.STEEL_PLATEBODY],
+            xpPerAction: 200,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'barbarian', hitsToKill: 6 }
+        },
+        // ── Level 40-59: Al Kharid warriors
         {
             minLevel: 40,
-            maxLevel: 99,
+            maxLevel: 59,
             action: 'combat',
             location: Locations.AL_KHARID_WARRIORS,
-            toolItemIds: [Items.STEEL_SCIMITAR],
+            toolItemIds: [Items.ADAMANT_SCIMITAR, Items.ADAMANT_PLATEBODY],
             xpPerAction: 280,
             ticksPerAction: 4,
             successRate: 1.0,
             itemGained: Items.BONES,
             extra: { npcType: 'warrior', hitsToKill: 8 }
+        },
+        // ── Level 60-99: Al Kharid warriors (Rune)
+        {
+            minLevel: 60,
+            maxLevel: 99,
+            action: 'combat',
+            location: Locations.AL_KHARID_WARRIORS,
+            toolItemIds: [Items.RUNE_SCIMITAR, Items.RUNE_PLATEBODY],
+            xpPerAction: 350,
+            ticksPerAction: 4,
+            successRate: 1.0,
+            itemGained: Items.BONES,
+            extra: { npcType: 'warrior', hitsToKill: 10 }
         }
     ],
 
@@ -1374,17 +1472,18 @@ export const SkillProgression: Record<string, SkillStep[]> = {
     // XP from npc (pickpocket success), levels from 2004 wiki
     // Pickpocket man/woman in Lumbridge/Varrock until 99
     THIEVING: [
-        // Level 1-9: Lumbridge man
+        // Level 1-4: Lumbridge man
         { minLevel: 1, maxLevel: 4, action: 'thieve', location: Locations.THIEVE_LUMBRIDGE_MAN, toolItemIds: [], xpPerAction: 80, ticksPerAction: 4, successRate: 0.85, itemGained: Items.COINS, extra: { npcName: 'man' } },
-        // Level 5-19: Baker's stall (Seers/Ardougne)
-        { minLevel: 5, maxLevel: 99, action: 'thieve_stall', location: Locations.BAKER_STALL, toolItemIds: [], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.CAKE, extra: { stallId: 2561, npcType: 'Baker' } },
+        // Level 5-9: Baker's stall (Seers/Ardougne)
+        { minLevel: 5, maxLevel: 9, action: 'thieve_stall', location: Locations.BAKER_STALL, toolItemIds: [], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.CAKE, extra: { stallId: 2561, npcType: 'Baker' } },
         // Level 10-24: Varrock man (more profitable)
         { minLevel: 10, maxLevel: 24, action: 'thieve', location: Locations.THIEVE_VARROCK_MAN, toolItemIds: [], xpPerAction: 350, ticksPerAction: 4, successRate: 0.8, itemGained: Items.COINS, extra: { npcName: 'man' } },
-        { minLevel: 1, maxLevel: 99, action: 'thieve', location: Locations.THIEVE_LUMBRIDGE_MAN, toolItemIds: [], xpPerAction: 200, ticksPerAction: 4, successRate: 0.85, itemGained: Items.COINS, extra: { npcName: 'man' } },
-      
-        // Level 25-49: Lumbridge woman (higher success rate)
-        { minLevel: 1, maxLevel: 99, action: 'thieve', location: Locations.THIEVE_LUMBRIDGE_WOMAN, toolItemIds: [], xpPerAction: 450, ticksPerAction: 4, successRate: 0.9, itemGained: Items.COINS, extra: { npcName: 'woman' } },
-        // Level 50-99: Varrock woman (best silver/tokens)
+        // Level 25-39: Lumbridge woman (higher success rate)
+        { minLevel: 25, maxLevel: 39, action: 'thieve', location: Locations.THIEVE_LUMBRIDGE_WOMAN, toolItemIds: [], xpPerAction: 450, ticksPerAction: 4, successRate: 0.9, itemGained: Items.COINS, extra: { npcName: 'woman' } },
+        // Level 40-54: Guards
+        { minLevel: 40, maxLevel: 54, action: 'thieve', location: Locations.GUARDS_VARROCK, toolItemIds: [], xpPerAction: 300, ticksPerAction: 4, successRate: 0.7, itemGained: Items.COINS, extra: { npcName: 'guard' } },
+        // Level 55-99: Knight of Ardougne
+        { minLevel: 55, maxLevel: 99, action: 'thieve', location: Locations.BAKER_STALL, toolItemIds: [], xpPerAction: 843, ticksPerAction: 4, successRate: 0.6, itemGained: Items.COINS, extra: { npcName: 'knight' } }
     ],
 
     // ── Crafting ─────────────────────────────────────────────────────────────
@@ -1739,6 +1838,19 @@ export const SkillProgression: Record<string, SkillStep[]> = {
             ticksPerAction: 10,
             successRate: 1.0,
             itemGained: Items.AIR_RUNE // placeholder
+        }
+    ],
+
+    SCAM: [
+        {
+            minLevel: 1,
+            maxLevel: 99,
+            action: 'scam',
+            location: Locations.VARROCK_WEST_BANK,
+            toolItemIds: [],
+            xpPerAction: 0,
+            ticksPerAction: 10,
+            successRate: 1.0
         }
     ]
 };

@@ -2,7 +2,7 @@
   { "username": "araxxor_prime", "planner": "skiller", "description": "Skiller" },
   { "username": "zulrah_walker", "planner": "fighter", "description": "Fighter" },
   { "username": "vorkathslayer", "planner": "balanced", "description": "Balanced" },
-  { "username": "bandos_warborn", "planner": "fighter", "description": "Random" },
+  { "username": "bandos_warborn", "planner": "fighter", "description": "Fighter" },
   { "username": "armadyl_zephyr", "planner": "skiller", "description": "Skiller 2" },
   { "username": "saradominwrath", "planner": "fighter", "description": "Fighter 2" },
   { "username": "zamorak_furyx", "planner": "random", "description": "Random" },
@@ -10,11 +10,11 @@
   { "username": "soulja_grinder", "planner": "skiller", "description": "Skiller" },
   { "username": "lil_xp_dropz", "planner": "balanced", "description": "Balanced" },
   { "username": "rickross_maxcash", "planner": "fighter", "description": "Fighter" },
-  { "username": "drake_bankloot", "planner": "random", "description": "Random" },
+  { "username": "drake_bankloot", "planner": "scammer", "description": "Scammer 1" },
   { "username": "future_skiller", "planner": "skiller", "description": "Skiller 2" },
   { "username": "liluzivault", "planner": "fighter", "description": "Fighter 2" },
   { "username": "travis_scotted", "planner": "balanced", "description": "Balanced" },
-  { "username": "metroboominxp", "planner": "random", "description": "Random" },
+  { "username": "metroboominxp", "planner": "scammer", "description": "Scammer 2" },
 
   { "username": "xX_DragonScape_Xx", "planner": "skiller", "description": "Skiller" },
   { "username": "NoScopeRunePure", "planner": "fighter", "description": "Fighter" },
@@ -27,7 +27,7 @@
   { "username": "xXxSouljaXPxXx", "planner": "skiller", "description": "Skiller" },
   { "username": "LilGrindz", "planner": "balanced", "description": "Balanced" },
   { "username": "xxDripLootxx", "planner": "fighter", "description": "Fighter" },
-  { "username": "NoCapMercher", "planner": "random", "description": "Random" },
+  { "username": "NoCapMercher", "planner": "scammer", "description": "Scammer 3" },
   { "username": "CashStackzHD", "planner": "skiller", "description": "Skiller 2" },
   { "username": "TrapLordScape", "planner": "fighter", "description": "Fighter 2" },
 
@@ -48,5 +48,16 @@
   { "username": "RuneDefPure", "planner": "balanced", "description": "Balanced" },
   { "username": "MysticStaffMain", "planner": "skiller", "description": "Skiller" },
   { "username": "F2PWarriorX", "planner": "random", "description": "Random" },
-  { "username": "PKHonorBound", "planner": "fighter", "description": "Fighter 2" }
+  { "username": "PKHonorBound", "planner": "fighter", "description": "Fighter 2" },
+
+  { "username": "DraynorDreamer", "planner": "skiller", "description": "Draynor local" },
+  { "username": "VarrockViking", "planner": "fighter", "description": "Varrock fighter" },
+  { "username": "AlKharidAce", "planner": "balanced", "description": "Desert explorer" },
+  { "username": "FaladorFancy", "planner": "skiller", "description": "White Knight fan" },
+  { "username": "SeersSeeker", "planner": "random", "description": "Woodcutter enthusiast" },
+  { "username": "WildyWanderer", "planner": "scammer", "description": "Scammer candidate" },
+  { "username": "LumbridgeLad", "planner": "balanced", "description": "Noob but trying" },
+  { "username": "GnomeGlider", "planner": "skiller", "description": "Agility focus" },
+  { "username": "EntranaEntry", "planner": "balanced", "description": "Peaceful skiller" },
+  { "username": "TaverleyTrist", "planner": "random", "description": "Druid visitor" }
 ]

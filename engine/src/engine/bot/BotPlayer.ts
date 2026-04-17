@@ -111,7 +111,7 @@ export class BotPlayer {
             return; // let the task pick up normally next tick
         }
 
-        if (chance(0.003)) this._say(pick(IDLE_PHRASES));
+        if (chance(0.005)) this._say(pick(IDLE_PHRASES));
 
         // ── SUB TASK (HIGH PRIORITY) ─────────────────────────────
         if (this.subTask) {

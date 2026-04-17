@@ -37,6 +37,7 @@ import { FletchingTask } from '#/engine/bot/tasks/FletchingTask.js';
 import { FlaxPickingTask } from '#/engine/bot/tasks/FlaxPickingTask.js';
 import { HerbloreTask } from '#/engine/bot/tasks/HerbloreTask.js';
 import { BakerStallThiefTask } from '#/engine/bot/tasks/BakerStallThiefTask.js';
+import { ScamTask } from '#/engine/bot/tasks/ScamTask.js';
 
 // ── Personality ───────────────────────────────────────────────────────────────
 
@@ -96,11 +97,19 @@ export const Personalities: Record<string, BotPersonality> = {
             RUNECRAFT: 8,    // unlocks once a talisman drops
             HERBLORE: 6      // requires guams (chaos druid drops) + coins
         }
+    },
+    SCAMMER: {
+        name: 'Scammer',
+        weights: {
+            THIEVING: 40,
+            SCAM: 60
+        }
     }
 };
 
 // Skill name → PlayerStat
 const SKILL_STAT: Record<string, PlayerStat> = {
+    SCAM: PlayerStat.THIEVING, // Placeholder
     ATTACK: PlayerStat.ATTACK,
     STRENGTH: PlayerStat.STRENGTH,
     DEFENCE: PlayerStat.DEFENCE,
@@ -132,7 +141,7 @@ const SKILLS_WITH_CONTENT = new Set(
 // Shops close enough to Lumbridge spawn that bots can reach without getting stuck.
 // Bots will ONLY go to these shops automatically. Starter weapons/tools are given
 // via InitTask so bots never need to walk to Varrock or Port Sarim just to begin.
-const NEARBY_SHOPS = new Set(['BOB_AXES', 'LUMBRIDGE_GENERAL', 'AL_KHARID_SCIMITARS', 'AL_KHARID_CRAFTING', 'VARROCK_ARCHERY', 'VARROCK_RUNES', 'VARROCK_STAFFS']);
+const NEARBY_SHOPS = new Set(['BOB_AXES', 'LUMBRIDGE_GENERAL', 'AL_KHARID_SCIMITARS', 'AL_KHARID_CRAFTING', 'VARROCK_ARCHERY', 'VARROCK_RUNES', 'VARROCK_STAFFS', 'VARROCK_ARMOUR']);
 
 // ── Planner ───────────────────────────────────────────────────────────────────
 
@@ -259,6 +268,10 @@ export class BotGoalPlanner {
                 const rcTask = this._findRunecraftingTask(player);
                 if (rcTask) return rcTask;
                 continue;
+            }
+
+            if (skillName === 'SCAM') {
+                return new ScamTask();
             }
 
 

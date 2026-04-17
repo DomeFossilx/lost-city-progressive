@@ -21,3 +21,4 @@ export { FlaxPickingTask } from '#/engine/bot/tasks/FlaxPickingTask.js';
 export { HerbloreTask } from '#/engine/bot/tasks/HerbloreTask.js';
 export { BakerStallThiefTask } from '#/engine/bot/tasks/BakerStallThiefTask.js';
 export { ThievingTask } from '#/engine/bot/tasks/ThievingTask.js';
+export { ScamTask } from '#/engine/bot/tasks/ScamTask.js';

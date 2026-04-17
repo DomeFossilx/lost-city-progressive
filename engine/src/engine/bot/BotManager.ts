@@ -44,11 +44,16 @@ function normalizeBotUsername(raw: string): string {
     return fromBase37(toBase37(raw));
 }
 
+export function makeScammer(): BotGoalPlanner {
+    return new BotGoalPlanner(Personalities.SCAMMER);
+}
+
 const PLANNER_MAP = {
     skiller: makeSkiller,
     fighter: makeFighter,
     balanced: makeBalanced,
-    random: makeRandom
+    random: makeRandom,
+    scammer: makeScammer
 } as const;
 
 type PlannerKey = keyof typeof PLANNER_MAP;

@@ -94,6 +94,17 @@
         { "text": "{total} total atm", "weight": 2 }
       ]
     },
+    {
+      "id": "scam",
+      "patterns": ["doubling", "trimming", "scam", "scammer", "trust"],
+      "replies": [
+        { "text": "Flash2: Doubling money! Trade me!", "weight": 2 },
+        { "text": "I'm legit, trust me", "weight": 1 },
+        { "text": "Trimming armor for free! Just trade!", "weight": 1 },
+        { "text": "I don't scam mate, I've got a reputation", "weight": 1 },
+        { "text": "Lol you think I'm a scammer?", "weight": 2 }
+      ]
+    },
 
     {
       "id": "strength",
