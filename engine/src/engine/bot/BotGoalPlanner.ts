@@ -37,6 +37,7 @@ import { FletchingTask } from '#/engine/bot/tasks/FletchingTask.js';
 import { FlaxPickingTask } from '#/engine/bot/tasks/FlaxPickingTask.js';
 import { HerbloreTask } from '#/engine/bot/tasks/HerbloreTask.js';
 import { StallThievingTask } from '#/engine/bot/tasks/StallThievingTask.js';
+import { AgilityTask } from '#/engine/bot/tasks/AgilityTask.js';
 
 // ── Personality ───────────────────────────────────────────────────────────────
 
@@ -328,6 +329,7 @@ export class BotGoalPlanner {
                 if (step.action === 'smelt' || step.action === 'smith') return new SmithingTask(step);
                 if (step.action === 'thieve') return new ThievingTask(step);
                 if (step.action === 'thieve_stall') return new StallThievingTask(step);
+                if (step.action === 'agility') return new AgilityTask(step);
                 if (step.action === 'pick_flax') return new FlaxPickingTask(step);
                 if (step.action === 'herblore_attack') {
                     // Require guams (chaos druid drops) — no guams, no herblore.

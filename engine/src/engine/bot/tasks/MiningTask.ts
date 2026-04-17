@@ -298,8 +298,20 @@ export class MiningTask extends BotTask {
             prefixes.push('ironrock');
         }
         // Level 30+: coal (and iron for some mines)
-        else {
+        else if (miningLevel <= 54) {
             prefixes.push('coalrock', 'ironrock');
+        }
+        // Level 55+: Mithril
+        else if (miningLevel <= 69) {
+            prefixes.push('mithrilrock', 'coalrock');
+        }
+        // Level 70+: Adamant
+        else if (miningLevel <= 84) {
+            prefixes.push('adamantrock', 'mithrilrock');
+        }
+        // Level 85+: Runite
+        else {
+            prefixes.push('runiterock', 'adamantrock');
         }
 
         return prefixes;
