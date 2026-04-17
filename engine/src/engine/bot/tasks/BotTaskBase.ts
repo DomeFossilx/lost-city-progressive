@@ -109,7 +109,17 @@ export function teleportNear(player: Player, x: number, z: number): void {
  * climb stairs.  Al Kharid bank is included; the GATEWAY_REGIONS routing in
  * walkTo handles the gate automatically.
  */
-const BOT_BANKS: ReadonlyArray<[number, number, number]> = [Locations.DRAYNOR_BANK, Locations.VARROCK_WEST_BANK, Locations.VARROCK_EAST_BANK, Locations.AL_KHARID_BANK, Locations.FALADOR_EAST_BANK, Locations.SEERS_BANK];
+const BOT_BANKS: ReadonlyArray<[number, number, number]> = [
+    Locations.DRAYNOR_BANK,
+    Locations.VARROCK_WEST_BANK,
+    Locations.VARROCK_EAST_BANK,
+    Locations.AL_KHARID_BANK,
+    Locations.FALADOR_EAST_BANK,
+    Locations.SEERS_BANK,
+    Locations.EDGEVILLE_BANK,
+    Locations.YANILLE_BANK,
+    Locations.CATHERBY_BANK
+];
 
 /**
  * Returns the [x, z, level] tuple of the bank closest to the player's

@@ -22,3 +22,4 @@ export { HerbloreTask } from '#/engine/bot/tasks/HerbloreTask.js';
 export { StallThievingTask } from '#/engine/bot/tasks/StallThievingTask.js';
 export { ThievingTask } from '#/engine/bot/tasks/ThievingTask.js';
 export { WaterFillingTask } from '#/engine/bot/tasks/WaterFillingTask.js';
+export { AgilityTask } from '#/engine/bot/tasks/AgilityTask.js';

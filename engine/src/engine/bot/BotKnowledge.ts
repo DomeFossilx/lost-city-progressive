@@ -47,6 +47,7 @@ export const Items = {
     COAL: 453,
     MITHRIL_ORE: 447,
     ADAMANTITE_ORE: 449,
+    RUNITE_ORE: 451,
     GOLD_ORE: 444,
     CLAY: 434,
     SOFT_CLAY: 1761,
@@ -67,6 +68,7 @@ export const Items = {
     RAW_SALMON: 331,
     RAW_LOBSTER: 377,
     RAW_SWORDFISH: 371,
+    RAW_SHARK: 383,
 
     // Cooked fish  (all verified)
     SHRIMP: 315,
@@ -76,6 +78,7 @@ export const Items = {
     SALMON: 329,
     LOBSTER: 379,
     SWORDFISH: 373,
+    SHARK: 385,
 
     // Combat drops
     BONES: 526,
@@ -301,6 +304,39 @@ export const Objects = {
 //   🚫 Avoid               — unreachable by bots (underground / boat-only)
 // ─────────────────────────────────────────────────────────────────────────────
 
+export interface AgilityObstacle {
+    name: string;
+    op: number;
+}
+
+export const AgilityCourses: Record<string, AgilityObstacle[]> = {
+    GNOME: [
+        { name: 'gnome_log_balance', op: 1 },
+        { name: 'gnome_obstacle_net_1', op: 1 },
+        { name: 'gnome_tree_branch_1', op: 1 },
+        { name: 'gnome_balancing_rope', op: 1 },
+        { name: 'gnome_tree_branch_2', op: 1 },
+        { name: 'gnome_obstacle_net_2', op: 1 },
+        { name: 'gnome_obstacle_pipe', op: 1 }
+    ],
+    BARBARIAN: [
+        { name: 'barbarian_rope_swing', op: 1 },
+        { name: 'barbarian_log_balance', op: 1 },
+        { name: 'barbarian_obstacle_net', op: 1 },
+        { name: 'barbarian_ledge', op: 1 },
+        { name: 'castlecrumbly1', op: 1 },
+        { name: 'barbarian_obstacle_pipe', op: 1 }
+    ],
+    WILDERNESS: [
+        { name: 'loc_2309', op: 1 },
+        { name: 'wilderness_obstacle_pipe', op: 1 },
+        { name: 'wilderness_rope_swing', op: 1 },
+        { name: 'wilderness_stepping_stone', op: 1 },
+        { name: 'wilderness_log_balance', op: 1 },
+        { name: 'wilderness_rocks', op: 1 }
+    ]
+};
+
 export const Locations = {
     // ── Spawn ─────────────────────────────────────────────────────────────────
     LUMBRIDGE_SPAWN: [3180, 3240, 0] as [number, number, number], // ✅ road north of Lumbridge castle
@@ -316,8 +352,10 @@ export const Locations = {
 
     // ── Agility ───────────────────────────────────────────────────────────────
     GNOME_AGILITY: [2474, 3436, 0] as [number, number, number], // ✅
+    BARBARIAN_AGILITY: [2541, 3556, 0] as [number, number, number], // ✅
+    WILDERNESS_AGILITY: [2998, 3912, 0] as [number, number, number], // ✅
 
-    // ── Shops ─────────────────────────────────────────────────────────────────
+    // ── Mining ────────────────────────────────────────────────────────────────
     BOB_AXES: [3231, 3203, 0] as [number, number, number], // ✅ Bob's Axes, Lumbridge
     LUMBRIDGE_GENERAL: [3213, 3247, 0] as [number, number, number], // ✅ General Store
     GERRANTS_FISHING: [3014, 3224, 0] as [number, number, number], // ✅ Port Sarim — only F2P fishing shop
@@ -352,12 +390,21 @@ export const Locations = {
     MINE_DWARVEN: [3082, 3421, 0] as [number, number, number], // ✅ Barbarian Village surface mine — copper/tin/iron/coal, gate-free
     MINE_KARAMJA: [2734, 3221, 0] as [number, number, number], // ✅ karmajagold
     MINE_RIMMINGTON: [2977, 3233, 0] as [number, number, number], // ✅ clay
+    MINE_MITHRIL: [3302, 3300, 0] as [number, number, number], // Al Kharid
+    MINE_ADAMANT: [3300, 3310, 0] as [number, number, number], // Al Kharid
+    MINE_RUNITE: [3060, 3885, 0] as [number, number, number], // Wilderness
+    EDGEVILLE_BANK: [3093, 3491, 0] as [number, number, number],
+    YANILLE_BANK: [2613, 3093, 0] as [number, number, number],
+    CATHERBY_BANK: [2808, 3441, 0] as [number, number, number],
+    EDGEVILLE_DUNGEON: [3096, 3469, 0] as [number, number, number],
+    YANILLE_DUNGEON: [2606, 3102, 0] as [number, number, number],
 
     // ── Fishing ───────────────────────────────────────────────────────────────
     FISH_DRAYNOR: [3088, 3228, 0] as [number, number, number], // ✅ shrimp + sardine (net/bait)
     FISH_BARBARIAN: [3105, 3432, 0] as [number, number, number], // ✅ trout + salmon (fly rod) — best accessible spot
     FISH_KARAMJA: [2924, 3173, 0] as [number, number, number], // ⛩ lobster + swordfish (pot/harpoon) — boat-routed via Port Sarim
     FISH_ALKHARID: [3277, 3142, 0] as [number, number, number], // ✅ shrimp + sardine (net/bait)
+    FISH_SHARK: [2600, 3415, 0] as [number, number, number], // Catherby
     // ── Combat ────────────────────────────────────────────────────────────────
     CHICKENS_LUMBRIDGE: [3237, 3295, 0] as [number, number, number], // ✅ level 1 chickens, no walls
     CHICKENS_LUMBRIDGE2: [3188, 3278, 0] as [number, number, number], // ✅ level 1 chickens, no walls
@@ -726,7 +773,9 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         // Level 40-49: cage — lobster at Karamja (boat-routed via Port Sarim)
         { minLevel: 40, maxLevel: 49, action: 'fish', location: Locations.FISH_KARAMJA, toolItemIds: [Items.LOBSTER_POT], xpPerAction: 900, ticksPerAction: 5, successRate: 0.5, itemGained: Items.RAW_LOBSTER },
         // Level 50-99: harpoon — swordfish at Karamja (boat-routed via Port Sarim)
-        { minLevel: 50, maxLevel: 99, action: 'fish', location: Locations.FISH_KARAMJA, toolItemIds: [Items.HARPOON], xpPerAction: 1000, ticksPerAction: 5, successRate: 0.45, itemGained: Items.RAW_SWORDFISH }
+        { minLevel: 50, maxLevel: 99, action: 'fish', location: Locations.FISH_KARAMJA, toolItemIds: [Items.HARPOON], xpPerAction: 1000, ticksPerAction: 5, successRate: 0.45, itemGained: Items.RAW_SWORDFISH },
+        // Level 76-99: harpoon — shark at Catherby
+        { minLevel: 76, maxLevel: 99, action: 'fish', location: Locations.FISH_SHARK, toolItemIds: [Items.HARPOON], xpPerAction: 1100, ticksPerAction: 10, successRate: 0.35, itemGained: Items.RAW_SHARK }
     ],
 
     // ── Mining ───────────────────────────────────────────────────────────────
@@ -785,7 +834,10 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         // Level 30+: coal at Barbarian Village mine (surface accessible!)
         { minLevel: 30, maxLevel: 99, action: 'mine', location: Locations.MINE_DWARVEN, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 500, ticksPerAction: 6, successRate: 0.45, itemGained: Items.COAL },
         { minLevel: 40, maxLevel: 99, action: 'mine', location: Locations.MINE_KARAMJA, via: Locations.WILLOWS_BARBARIAN_VIA, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 650, ticksPerAction: 6, successRate: 0.45, itemGained: Items.GOLD_ORE },
-        { minLevel: 1, maxLevel: 99, action: 'mine', location: Locations.MINE_RIMMINGTON, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 50, ticksPerAction: 4, successRate: 0.8, itemGained: Items.CLAY }
+        { minLevel: 1, maxLevel: 99, action: 'mine', location: Locations.MINE_RIMMINGTON, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 50, ticksPerAction: 4, successRate: 0.8, itemGained: Items.CLAY },
+        { minLevel: 55, maxLevel: 99, action: 'mine', location: Locations.MINE_MITHRIL, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 800, ticksPerAction: 8, successRate: 0.4, itemGained: Items.MITHRIL_ORE },
+        { minLevel: 70, maxLevel: 99, action: 'mine', location: Locations.MINE_ADAMANT, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 950, ticksPerAction: 10, successRate: 0.35, itemGained: Items.ADAMANTITE_ORE },
+        { minLevel: 85, maxLevel: 99, action: 'mine', location: Locations.MINE_RUNITE, toolItemIds: [Items.BRONZE_PICKAXE], xpPerAction: 1250, ticksPerAction: 15, successRate: 0.25, itemGained: Items.RUNITE_ORE }
     ],
 
     // ── Firemaking ───────────────────────────────────────────────────────────
@@ -819,7 +871,8 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         { minLevel: 15, maxLevel: 99, action: 'cook', location: Locations.VARROCK_RANGE, toolItemIds: [], xpPerAction: 700, ticksPerAction: 4, successRate: 0.7, itemConsumed: Items.RAW_TROUT, itemGained: Items.TROUT },
         { minLevel: 25, maxLevel: 99, action: 'cook', location: Locations.VARROCK_RANGE, toolItemIds: [], xpPerAction: 900, ticksPerAction: 4, successRate: 0.7, itemConsumed: Items.RAW_SALMON, itemGained: Items.SALMON },
         { minLevel: 40, maxLevel: 99, action: 'cook', location: Locations.VARROCK_RANGE, toolItemIds: [], xpPerAction: 1200, ticksPerAction: 4, successRate: 0.8, itemConsumed: Items.RAW_LOBSTER, itemGained: Items.LOBSTER },
-        { minLevel: 45, maxLevel: 99, action: 'cook', location: Locations.VARROCK_RANGE, toolItemIds: [], xpPerAction: 1400, ticksPerAction: 4, successRate: 0.85, itemConsumed: Items.RAW_SWORDFISH, itemGained: Items.SWORDFISH }
+        { minLevel: 45, maxLevel: 99, action: 'cook', location: Locations.VARROCK_RANGE, toolItemIds: [], xpPerAction: 1400, ticksPerAction: 4, successRate: 0.85, itemConsumed: Items.RAW_SWORDFISH, itemGained: Items.SWORDFISH },
+        { minLevel: 80, maxLevel: 99, action: 'cook', location: Locations.VARROCK_RANGE, toolItemIds: [], xpPerAction: 2100, ticksPerAction: 4, successRate: 0.9, itemConsumed: Items.RAW_SHARK, itemGained: Items.SHARK }
     ],
 
     // ── Combat — Attack ──────────────────────────────────────────────────────
@@ -1685,8 +1738,12 @@ export const SkillProgression: Record<string, SkillStep[]> = {
         }
     ],
 
-    // ── Stubs ─────────────────────────────────────────────────────────────────
-    AGILITY: [], // requires course loc sequences
+    // ── Agility ────────────────────────────────────────────────────────────────
+    AGILITY: [
+        { minLevel: 1, maxLevel: 34, action: 'agility', location: Locations.GNOME_AGILITY, toolItemIds: [], xpPerAction: 865, ticksPerAction: 45, successRate: 1.0, extra: { course: 'GNOME' } },
+        { minLevel: 35, maxLevel: 51, action: 'agility', location: Locations.BARBARIAN_AGILITY, toolItemIds: [], xpPerAction: 1533, ticksPerAction: 60, successRate: 0.9, extra: { course: 'BARBARIAN' } },
+        { minLevel: 52, maxLevel: 99, action: 'agility', location: Locations.WILDERNESS_AGILITY, toolItemIds: [], xpPerAction: 5714, ticksPerAction: 80, successRate: 0.8, extra: { course: 'WILDERNESS' } }
+    ],
 
     // Fletching — use knife on logs near bank
     // XP from cut_logs.dbrow (productexp field × 10)
