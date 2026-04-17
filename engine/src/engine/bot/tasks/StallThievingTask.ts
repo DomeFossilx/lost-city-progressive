@@ -313,7 +313,7 @@ export class StallThievingTask extends BotTask {
         let deposited = 0;
         // Collect all possible loot from all stalls
         const lootIds = [
-            Items.CAKE, 1893, 1895, Items.BREAD, 1901,
+            Items.CAKE, Items.SLICE_OF_CAKE, Items.CHOCOLATE_CAKE, Items.BREAD, Items.CHOCOLATE_SLICE,
             Items.SILK, Items.SILVER_ORE, Items.SPICE,
             Items.GREY_WOLF_FUR, Items.UNCUT_SAPPHIRE,
             Items.UNCUT_EMERALD, Items.UNCUT_RUBY, Items.UNCUT_DIAMOND

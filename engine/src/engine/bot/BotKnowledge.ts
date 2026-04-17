@@ -194,6 +194,9 @@ export const Items = {
     BODY_RUNE: 559,
 
     CAKE: 1891,
+    SLICE_OF_CAKE: 1893,
+    CHOCOLATE_CAKE: 1895,
+    CHOCOLATE_SLICE: 1901,
     SILK: 950,
     SILVER_ORE: 442,
     SPICE: 2007,
