@@ -12,6 +12,7 @@ import InvType from '#/cache/config/InvType.js';
 import { Inventory } from '#/engine/Inventory.js';
 import {
     walkTo, interactNpc, interactNpcOp, interactLoc, interactLocOp,
+    findNpcNear, findLocNear,
     findNpcByName, findNpcByPrefix, findNpcBySuffix, findLocByPrefix, findLocByName,
     hasItem, countItem, addItem, removeItem, isInventoryFull,
     getBaseLevel, PlayerStat, hasWaypoints,
@@ -92,7 +93,7 @@ const BOT_BANKS: ReadonlyArray<[number, number, number]> = [
     Locations.VARROCK_EAST_BANK,
     Locations.AL_KHARID_BANK,
     Locations.FALADOR_EAST_BANK,
-    
+
 ];
 
 /**
@@ -168,6 +169,7 @@ export type { SkillStep } from '#/engine/bot/BotKnowledge.js';
 export {
     Player, Npc, Loc, InvType, Inventory,
     walkTo, interactNpc, interactNpcOp, interactLoc, interactLocOp,
+    findNpcNear, findLocNear,
     findNpcByName, findNpcByPrefix, findNpcBySuffix, findLocByPrefix, findLocByName,
     hasItem, countItem, addItem, removeItem, isInventoryFull,
     getBaseLevel, PlayerStat, hasWaypoints,

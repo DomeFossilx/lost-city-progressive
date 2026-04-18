@@ -96,6 +96,17 @@ export const Items = {
 
     // Food
     BREAD:              2309,
+    CAKE:               1891,
+
+    // Thieving loot
+    SILK:               950,
+    SPICE:              2007,
+    GREY_WOLF_FUR:      1755,
+    UNCUT_SAPPHIRE:     1623,
+    UNCUT_EMERALD:      1605,
+    UNCUT_RUBY:         1603,
+    UNCUT_DIAMOND:      1601,
+    SILVER_ORE:         442,
 
     // Firemaking
     TINDERBOX:          590,
@@ -212,6 +223,21 @@ export const Locations = {
     AL_KHARID_FURNACE:       [3192, 3162, 0] as [number, number, number],  // ⛩ inside Al Kharid
     VARROCK_ANVIL:           [3188, 3422, 0] as [number, number, number],  // ✅
     LUMBRIDGE_ALTAR:         [3243, 3210, 0] as [number, number, number],  // ✅
+
+    // ── Thieving ──────────────────────────────────────────────────────────────
+    THIEVE_LUMBRIDGE_MAN:    [3192, 3248, 0] as [number, number, number],
+    THIEVE_ALKHARID_WARRIOR: [3294, 3172, 0] as [number, number, number],
+    THIEVE_VARROCK_GUARD:    [3212, 3474, 0] as [number, number, number],
+    THIEVE_ARDY_KNIGHT:      [2655, 3302, 0] as [number, number, number],
+    THIEVE_PALADIN:          [2655, 3295, 0] as [number, number, number],
+    THIEVE_HERO:             [2655, 3290, 0] as [number, number, number],
+
+    BAKER_STALL:             [2667, 3311, 0] as [number, number, number],
+    SILK_STALL:              [2662, 3314, 0] as [number, number, number],
+    SILVER_STALL:            [2658, 3313, 0] as [number, number, number],
+    SPICE_STALL:             [2659, 3310, 0] as [number, number, number],
+    FUR_STALL:               [2662, 3305, 0] as [number, number, number],
+    GEM_STALL:               [2662, 3310, 0] as [number, number, number],
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -307,7 +333,6 @@ export const Shops: Record<string, { location: [number, number, number]; stock: 
     },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tool requirements per skill
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -552,26 +577,35 @@ export const SkillProgression: Record<string, SkillStep[]> = {
 
     // ── Stubs ─────────────────────────────────────────────────────────────────
     FLETCHING:    [],  // requires stringing bows — complex multi-step
-    THIEVING:     [],  // requires NPC pickpocket interaction
     AGILITY:      [],  // requires course loc sequences
     RUNECRAFT:    [],  // requires talisman + altar interaction
-};
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Returns a matching progression step for the given skill and level.
- * When multiple steps match (e.g. chickens OR goblins at level 1) one is
- * chosen at random — giving bots natural variety without any extra logic.
-IEVING: [],
-
-    // Agility — stub (requires course locs not easily spoofed with teleport)
-    AGILITY: [],
-
-    // Runecrafting — stub (requires talisman + altar interaction)
-    RUNECRAFT: [],
+    THIEVING: [
+        // Level 1-9: Lumbridge man
+        { minLevel: 1, maxLevel: 9, action: 'thieve', location: Locations.THIEVE_LUMBRIDGE_MAN, toolItemIds: [], xpPerAction: 80, ticksPerAction: 4, successRate: 0.85, itemGained: Items.COINS, extra: { npcName: 'man' } },
+        // Level 5-19: Baker's stall (Seers/Ardougne)
+        { minLevel: 5, maxLevel: 19, action: 'thieve_stall', location: Locations.BAKER_STALL, toolItemIds: [], xpPerAction: 160, ticksPerAction: 4, successRate: 1.0, itemGained: Items.CAKE, extra: { stallId: 2561, npcType: 'Baker' } },
+        // Level 25-39: Warrior
+        { minLevel: 25, maxLevel: 39, action: 'thieve', location: Locations.THIEVE_ALKHARID_WARRIOR, toolItemIds: [], xpPerAction: 260, ticksPerAction: 4, successRate: 0.7, itemGained: Items.COINS, extra: { npcName: 'warrior' } },
+        // Level 20-41: Silk stall
+        { minLevel: 20, maxLevel: 41, action: 'thieve_stall', location: Locations.SILK_STALL, toolItemIds: [], xpPerAction: 240, ticksPerAction: 4, successRate: 1.0, itemGained: Items.SILK, extra: { stallId: 2560, npcType: 'Silk merchant' } },
+        // Level 40-54: Guard
+        { minLevel: 40, maxLevel: 54, action: 'thieve', location: Locations.THIEVE_VARROCK_GUARD, toolItemIds: [], xpPerAction: 468, ticksPerAction: 4, successRate: 0.65, itemGained: Items.COINS, extra: { npcName: 'guard' } },
+        // Level 42-64: Silver stall
+        { minLevel: 42, maxLevel: 64, action: 'thieve_stall', location: Locations.SILVER_STALL, toolItemIds: [], xpPerAction: 540, ticksPerAction: 4, successRate: 1.0, itemGained: Items.SILVER_ORE, extra: { stallId: 2562, npcType: 'Silver merchant' } },
+        // Level 35-41: Fur stall
+        { minLevel: 35, maxLevel: 41, action: 'thieve_stall', location: Locations.FUR_STALL, toolItemIds: [], xpPerAction: 360, ticksPerAction: 4, successRate: 1.0, itemGained: Items.GREY_WOLF_FUR, extra: { stallId: 2563, npcType: 'Fur merchant' } },
+        // Level 55-99: Knight
+        { minLevel: 55, maxLevel: 99, action: 'thieve', location: Locations.THIEVE_ARDY_KNIGHT, toolItemIds: [], xpPerAction: 843, ticksPerAction: 4, successRate: 0.6, itemGained: Items.COINS, extra: { npcName: 'knight' } },
+        // Level 65-74: Spice stall
+        { minLevel: 65, maxLevel: 74, action: 'thieve_stall', location: Locations.SPICE_STALL, toolItemIds: [], xpPerAction: 810, ticksPerAction: 4, successRate: 1.0, itemGained: Items.SPICE, extra: { stallId: 2564, npcType: 'Spice seller' } },
+        // Level 70-79: Paladin
+        { minLevel: 70, maxLevel: 79, action: 'thieve', location: Locations.THIEVE_PALADIN, toolItemIds: [], xpPerAction: 1518, ticksPerAction: 4, successRate: 0.5, itemGained: Items.COINS, extra: { npcName: 'paladin' } },
+        // Level 75-99: Gem stall
+        { minLevel: 75, maxLevel: 99, action: 'thieve_stall', location: Locations.GEM_STALL, toolItemIds: [], xpPerAction: 1600, ticksPerAction: 4, successRate: 1.0, itemGained: Items.UNCUT_SAPPHIRE, extra: { stallId: 2565, npcType: 'Gem merchant' } },
+        // Level 80-99: Hero
+        { minLevel: 80, maxLevel: 99, action: 'thieve', location: Locations.THIEVE_HERO, toolItemIds: [], xpPerAction: 2733, ticksPerAction: 4, successRate: 0.4, itemGained: Items.COINS, extra: { npcName: 'hero' } }
+    ],
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

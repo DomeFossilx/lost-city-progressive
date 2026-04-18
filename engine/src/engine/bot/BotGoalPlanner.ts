@@ -29,6 +29,8 @@ import { MiningTask }     from '#/engine/bot/tasks/MiningTask.js';
 import { FishingTask }    from '#/engine/bot/tasks/FishingTask.js';
 import { CombatTask }     from '#/engine/bot/tasks/CombatTask.js';
 import { FiremakingTask } from '#/engine/bot/tasks/FiremakingTask.js';
+import { StallThievingTask } from '#/engine/bot/tasks/StallThievingTask.js';
+import { PickpocketTask } from '#/engine/bot/tasks/PickpocketTask.js';
 
 // ── Personality ───────────────────────────────────────────────────────────────
 
@@ -43,6 +45,7 @@ export const Personalities: Record<string, BotPersonality> = {
         weights: {
             WOODCUTTING: 25, FISHING: 25, MINING: 20,
             COOKING: 15, SMITHING: 10, PRAYER: 5, FIREMAKING: 25,
+            THIEVING: 20,
         },
     },
     FIGHTER: {
@@ -59,6 +62,7 @@ export const Personalities: Record<string, BotPersonality> = {
             WOODCUTTING: 12, FISHING: 10, MINING: 8,
             COOKING: 8, SMITHING: 5, PRAYER: 5,
             RANGED: 4, MAGIC: 4, FIREMAKING: 25,
+            THIEVING: 10,
         },
     },
 };
@@ -197,7 +201,9 @@ export class BotGoalPlanner {
                             if (step.action === 'mine')    return new MiningTask(step);
                             if (step.action === 'fish')    return new FishingTask(step);
                             if (step.action === 'firemaking')    return new FiremakingTask(step);
-                            
+                            if (step.action === 'thieve_stall') return new StallThievingTask(step);
+                            if (step.action === 'thieve')        return new PickpocketTask(step);
+
                             // Other skills (cook, smith, etc.) not yet implemented
                             continue;
                         }
