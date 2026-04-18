@@ -162,6 +162,7 @@ class World {
     readonly cycleStats: Uint16Array = new Uint16Array(12);
 
     tickRate: number = World.TICKRATE; // speeds up when we're processing server shutdown
+    playerCount: number = 0;
     currentTick: number = 0; // the current tick of the game world.
     nextTick: number = 0; // the next time the game world should tick.
     shutdownTick: number = -1;
@@ -952,6 +953,7 @@ class World {
             }
 
             this.players[slot] = player;
+            this.playerCount++;
             rsbuf.addPlayer(slot);
             player.slot = slot;
             player.uid = ((Number(player.username37 & 0x1fffffn) << 11) | player.slot) >>> 0;
@@ -1621,6 +1623,7 @@ class World {
         rsbuf.removePlayer(player.slot);
         this.gameMap.getZone(player.x, player.z, player.level).leave(player);
         delete this.players[player.slot];
+        this.playerCount--;
         player.unlink();
         changeNpcCollision(player.width, player.x, player.z, player.level, false);
         player.cleanup();
@@ -1722,18 +1725,8 @@ class World {
 
         return undefined;
     }
-
-    // todo: could cache this, or increment/decrement on add/remove
     getTotalPlayers(): number {
-        let count = 0;
-
-        for (let i = 1; i < 2047; i++) {
-            if (typeof this.players[i] !== 'undefined') {
-                count++;
-            }
-        }
-
-        return count;
+        return this.playerCount;
     }
 
     scaleByPlayerCount(rate: number): number {
